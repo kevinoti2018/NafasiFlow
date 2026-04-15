@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////
+// USER
+//////////////////////////////
+
+model User {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  email     String  @unique
+  firstName String?
+  lastName  String?
+  name      String?
+
+  // Auth
+  password           String?
+  image              String?
+  role               UserRole  @default(USER)
+  isPasswordSet      Boolean   @default(true)
+  isActive           Boolean   @default(false)
+  resetToken         String?   @unique
+  resetTokenExpiry   DateTime?
+  activationExpiry   DateTime?
+  activationToken    String?   @unique
+  // Template reuse
+  lastUsedTemplateId String?   @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts          Account[]
+  cvVersions        CVVersion[]
+  templates         Template[]
+  jobs              Job[]
+  applications      Application[]
+  emailLogs         EmailLog[]
+  passwordHistories PasswordHistory[]
+  cvJobAnalyses     CVJobAnalysis[]
+
+  @@index([isActive])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model PasswordHistory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////////////
+// ACCOUNT (NextAuth)
+//////////////////////////////
+
+model Account {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token String? @db.String
+  access_token  String? @db.String
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.String
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+//////////////////////////////
+// CV VERSION (ENHANCED with ATS intelligence)
+//////////////////////////////
+
+model CVVersion {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Version lineage
+  parentId String?     @db.ObjectId
+  parent   CVVersion?  @relation("CVLineage", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children CVVersion[] @relation("CVLineage")
+  uploadedToCloudinary Boolean @default(false) // true once synced
+  localFilePath       String?
+  // Structured CV (semantic layer)
+  profile Json
+
+  // Template linkage
+  templateId        String?   @db.ObjectId
+  template          Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  fileHash          String?   @unique // binary SHA256 of uploaded file
+  contentHash       String? // normalized text SHA256 (not unique)
+  // File storage (source of truth)
+  originalFileUrl   String?
+  generatedFileUrl  String?
+  originalPublicId  String?
+  generatedPublicId String?
+
+  source CVSource
+
+  // 🟢 ATS FORMAT INTELLIGENCE (file-based, CV-level)
+  atsFormatScore    Int? // 0-100, layout ATS compatibility
+  parsingConfidence Int? // 0-100, text extraction reliability
+  formatIssues      Json? // array of { type, severity, message }
+  parserUsed        String? // e.g., "pdf-js", "docx4j"
+
+  // 🟢 CONTENT QUALITY (CV-level, job-agnostic)
+  atsContentScore Int? // bullet strength, keyword density, clarity
+  impactScore     Int? // action verbs, measurable results
+  keywordCoverage Int? // % of industry-standard skills present
+
+  // 🟢 AUDIT & VERSIONING
+  analysisVersion Int       @default(1) // increment when re-analyzed
+  lastAnalyzedAt  DateTime? // last time format/content analysis ran
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  applications  Application[]
+  cvJobAnalyses CVJobAnalysis[]
+
+  @@index([userId, createdAt])
+  @@index([templateId])
+  @@index([parentId])
+  @@index([atsFormatScore])
+  @@index([parsingConfidence])
+}
+
+enum CVSource {
+  upload
+  optimized
+  generated
+}
+
+//////////////////////////////
+// TEMPLATE
+//////////////////////////////
+
+model Template {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String
+  fileUrl String
+
+  metadata Json? // mapping / layout hints
+
+  type      TemplateType
+  isDefault Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  cvVersions   CVVersion[]
+  applications Application[]
+
+  @@index([userId, isDefault])
+  @@index([userId, createdAt])
+}
+
+enum TemplateType {
+  pdf
+  docx
+}
+
+//////////////////////////////
+// JOB (with deduplication and analysis status)
+//////////////////////////////
+
+model Job {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // User input
+  title      String? // optional, can be extracted by AI
+  company    String? // optional
+  rawContent String // original pasted JD text
+
+  // Deduplication (across all users)
+  contentHash String @unique // normalized SHA256
+
+  // AI analysis
+  structuredData  Json? // output from jdPrompt
+  analysisStatus  AnalysisStatus @default(pending)
+  analysisVersion Int            @default(1)
+  analyzedAt      DateTime? // when analysis completed
+
+  // Optional extracted fields for fast querying
+  normalizedTitle String? // e.g., "Senior Frontend Engineer"
+  function        String? // frontend, backend, fullstack, etc.
+  level           String? // junior, mid, senior, staff
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  applications  Application[]
+  cvJobAnalyses CVJobAnalysis[]
+
+  @@index([userId, createdAt])
+  @@index([analysisStatus])
+  @@index([normalizedTitle])
+}
+
+enum AnalysisStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+//////////////////////////////
+// APPLICATION
+//////////////////////////////
+
+model Application {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobId String @db.ObjectId
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  cvVersionId String    @db.ObjectId
+  cvVersion   CVVersion @relation(fields: [cvVersionId], references: [id], onDelete: Cascade)
+
+  templateId String?   @db.ObjectId
+  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  matchScore Float?
+
+  // Snapshot at time of application (immutable)
+  aiInsightsSnapshot Json
+
+  // Future-proofing AI evolution
+  analysisVersion Int? @default(1)
+
+  status ApplicationStatus
+
+  appliedAt DateTime?
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  // Relations
+  statusHistory StatusLog[]
+  cvJobAnalysis CVJobAnalysis? // One-to-one (optional)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([jobId])
+  @@index([cvVersionId])
+}
+
+//////////////////////////////
+// STATUS LOG
+//////////////////////////////
+
+model StatusLog {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  status    ApplicationStatus
+  changedAt DateTime          @default(now())
+
+  applicationId String      @db.ObjectId
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, changedAt])
+}
+
+//////////////////////////////
+// EMAIL LOGS
+//////////////////////////////
+
+enum EmailType {
+  WELCOME
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  ACCOUNT_DELETION
+  SECURITY_ALERT
+  MARKETING
+}
+
+enum EmailStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  OPENED
+}
+
+model EmailLog {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  recipient String
+  subject   String
+  type      EmailType
+  status    EmailStatus @default(QUEUED)
+
+  messageId String? @unique
+  error     String?
+
+  metadata Json?
+
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([recipient])
+  @@index([status])
+  @@index([type])
+}
+
+//////////////////////////////
+// APPLICATION STATUS
+//////////////////////////////
+
+enum ApplicationStatus {
+  saved
+  applied
+  interviewing
+  rejected
+  offered
+}
+
+//////////////////////////////
+// CV-JOB ANALYSIS (Independent, reusable, job‑contextual)
+//////////////////////////////
+
+model CVJobAnalysis {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cvVersionId String    @db.ObjectId
+  cvVersion   CVVersion @relation(fields: [cvVersionId], references: [id], onDelete: Cascade)
+
+  jobId String @db.ObjectId
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // Analysis results (job‑specific)
+  matchScore Float
+  analysis   Json // Full output from match/sell/optimize (includes contextual scores)
+
+  // Ranking & verdict
+  rankSignal String? // "top_10", "top_20", "not_recommended"
+  verdict    String? // "proceed", "consider", "high_risk"
+
+  // Optional link to an application (one-to-one)
+  applicationId String?      @db.ObjectId
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  analysisVersion Int @default(1)
+
+  createdAt DateTime @default(now())
+
+  // Constraints & indexes
+  @@unique([cvVersionId, jobId]) // No duplicate analysis for same CV+Job
+  @@unique([applicationId]) // Enforce one-to-one with Application
+  @@index([userId, matchScore])
+  @@index([jobId])
+  @@index([rankSignal])
+}

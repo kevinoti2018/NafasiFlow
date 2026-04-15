@@ -1,0 +1,15 @@
+"use client";
+import { SessionProvider } from "next-auth/react";
+
+const Providers = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <SessionProvider
+      refetchInterval={0} // Disable auto-refetch
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </SessionProvider>
+  );
+};
+
+export default Providers;
