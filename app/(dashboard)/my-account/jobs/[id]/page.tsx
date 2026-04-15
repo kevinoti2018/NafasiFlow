@@ -86,7 +86,8 @@ import {
 } from "@/hooks/use-job-analysis";
 import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
-
+import { CreateApplicationModal } from "@/components/jobs/create-application-modal";
+import { useCreateApplication } from "@/hooks/use-application";
 // Enhanced status configuration with executive styling
 const statusConfig = {
   pending: {
@@ -166,7 +167,7 @@ export default function JobDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [selectedCvId, setSelectedCvId] = useState<string>("");
-
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
   const { data, isLoading, error } = useJob(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByJob(
     id as string,
@@ -203,7 +204,7 @@ export default function JobDetailPage() {
   const handleDelete = async () => {
     if (!job) return;
     await deleteJob.mutateAsync(job.id);
-    router.push("/jobs");
+    router.push("/my-account/jobs");
   };
 
   const handleAnalyze = () => {
@@ -227,7 +228,9 @@ export default function JobDetailPage() {
   const StatusConfig =
     statusConfig[job.analysisStatus as keyof typeof statusConfig];
   const StatusIcon = StatusConfig?.icon || Clock;
-
+  const isApplying = false; // This will be handled inside the modal – we don't track here.
+  const isAnalyzing = analyzeMutation.isPending;
+  const isReanalyzing = reanalyzeMutation.isPending;
   // Calculate match statistics
   const matchScores = analyses?.analyses?.map((a: any) => a.matchScore) || [];
   const avgMatchScore =
@@ -253,6 +256,11 @@ export default function JobDetailPage() {
                   size="icon"
                   onClick={() => router.push("/my-account/jobs")}
                   className="mt-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                  disabled={
+                    retryAnalysis.isPending ||
+                    analyzeMutation.isPending ||
+                    reanalyzeMutation.isPending
+                  }
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -314,6 +322,18 @@ export default function JobDetailPage() {
                       : "Retry Analysis"}
                   </Button>
                 )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setApplicationModalOpen(true)}
+                  className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
+                  disabled={
+                    retryAnalysis.isPending || analyzeMutation.isPending
+                  }
+                >
+                  <Briefcase className="h-4 w-4" />
+                  Apply
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -1061,6 +1081,16 @@ export default function JobDetailPage() {
           jobTitle={job.title}
           onConfirm={handleDelete}
           isDeleting={deleteJob.isPending}
+        />
+        <CreateApplicationModal
+          open={applicationModalOpen}
+          onOpenChange={setApplicationModalOpen}
+          jobId={job.id}
+          jobTitle={job.title}
+          onSuccess={() => {
+            // Optionally refetch data or show toast – modal already shows success toast
+            setApplicationModalOpen(false);
+          }}
         />
       </div>
     </TooltipProvider>

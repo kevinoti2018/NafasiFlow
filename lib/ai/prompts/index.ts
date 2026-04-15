@@ -257,6 +257,37 @@ ${job.niceToHave ? `\nNICE TO HAVE:\n${JSON.stringify(job.niceToHave)}` : ""}
 `;
 
 // ===============================
+// 5. CV STRUCTURE PROMPT (Convert raw text to structured CV)
+// ===============================
+
+export const cvStructurePrompt: PromptFn<{ rawText: string }> = ({
+  rawText,
+}) => `
+${SYSTEM_PROMPT}
+
+TASK: Extract structured CV data from the raw text below.
+Return a JSON object matching the CVInput schema.
+
+CVInput schema:
+{
+  summary?: string,
+  experience?: Array<{ role: string, company: string, duration: string, bullets: string[] }>,
+  skills?: string[],
+  education?: Array<{ degree: string, institution: string, year: string }>,
+  projects?: Array<{ name: string, description: string, technologies: string[] }>
+}
+
+Rules:
+- Infer as much as possible from the text.
+- For missing fields, omit them or use empty arrays.
+- Do not invent information.
+- Use the exact schema field names.
+
+Raw CV text:
+${rawText.slice(0, 8000)}
+`;
+
+// ===============================
 // REGISTRY
 // ===============================
 
@@ -265,6 +296,7 @@ export const prompts = {
   sell: sellPrompt,
   optimize: optimizePrompt,
   jd: jdPrompt,
+  cvStructure: cvStructurePrompt,
 };
 
 export type PromptType = keyof typeof prompts | "custom";

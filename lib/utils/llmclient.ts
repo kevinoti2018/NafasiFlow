@@ -228,6 +228,7 @@ type OptimizeInput = {
   primaryChallenge?: string;
   targetPersona?: string;
   customPrompt?: string; // required when promptType === 'custom'
+  rawText?: string; // for cvStructure prompt
 };
 
 // ===============================
@@ -264,14 +265,23 @@ export async function optimizeWithLLM<T = any>(
       case "jd":
         promptFn = prompts.jd;
         break;
+      case "cvStructure":
+        promptFn = prompts.cvStructure;
+        break;
       default:
         throw new Error(`Unknown prompt type: ${promptType}`);
     }
     // ✅ Validate required fields based on prompt type
-    if (promptType === "jd") {
+    if (promptType === "cvStructure") {
+      if (!inputData.rawText) {
+        throw new Error(`rawText is required for prompt type: ${promptType}`);
+      }
+      prompt = promptFn({ rawText: inputData.rawText });
+    } else if (promptType === "jd") {
       if (!inputData.job) {
         throw new Error(`job is required for prompt type: ${promptType}`);
       }
+      prompt = promptFn(inputData);
     } else {
       // match, sell, optimize require both cv and job
       if (!inputData.cv || !inputData.job) {
@@ -279,8 +289,8 @@ export async function optimizeWithLLM<T = any>(
           `cv and job are required for prompt type: ${promptType}`,
         );
       }
+      prompt = promptFn(inputData);
     }
-    prompt = promptFn(inputData);
   }
 
   // Try OpenRouter first if its circuit is closed

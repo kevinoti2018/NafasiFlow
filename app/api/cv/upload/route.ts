@@ -15,6 +15,7 @@ import { analyzeFormat } from "@/lib/cv/format-analyzer";
 import { analyzeContent } from "@/lib/cv/content-analyzer";
 import { uploadToCloudinary } from "@/lib/utils/cloudinary";
 import { saveFileLocally } from "@/lib/utils/local-storage";
+import { optimizeWithLLM } from "@/lib/utils/llmclient";
 
 export async function POST(req: NextRequest) {
   const session = await getCurrentUser();
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(bytes);
   const fileHash = crypto.createHash("sha256").update(buffer).digest("hex");
 
-  // Check for exact binary duplicate (same file) for this user
+  // Check for exact binary duplicate
   const existingExact = await db.cVVersion.findFirst({
     where: { fileHash, userId: user.id },
   });
@@ -66,15 +67,17 @@ export async function POST(req: NextRequest) {
   const tempPath = path.join(tempDir, `${Date.now()}-${file.name}`);
   await writeFile(tempPath, buffer);
 
+  let warnings: string[] = [];
+
   try {
     const extractedText = await extractTextFromFile(tempPath);
     const normalizedText = normalizeText(extractedText);
     const contentHash = computeHash(normalizedText);
 
-    // Format analysis
+    // Format analysis (always runs)
     const formatAnalysis = await analyzeFormat(tempPath, extractedText);
 
-    // Check for semantic duplicate (same content)
+    // Check for semantic duplicate
     const existingSemantic = await db.cVVersion.findFirst({
       where: { contentHash, userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -85,7 +88,7 @@ export async function POST(req: NextRequest) {
     let contentAnalysis = null;
 
     if (existingSemantic) {
-      // Reuse structured profile and content scores
+      // Reuse existing profile and scores
       profile = existingSemantic.profile;
       parentId = existingSemantic.id;
       contentAnalysis = {
@@ -94,10 +97,33 @@ export async function POST(req: NextRequest) {
         keywordCoverage: existingSemantic.keywordCoverage,
       };
     } else {
-      contentAnalysis = await analyzeContent(extractedText);
+      // Run content analysis (AI) with fallback
+      try {
+        contentAnalysis = await analyzeContent(extractedText);
+      } catch (aiError) {
+        console.error("Content analysis failed:", aiError);
+        warnings.push("Content analysis failed; using default scores.");
+        contentAnalysis = {
+          atsContentScore: 50,
+          impactScore: 50,
+          keywordCoverage: 50,
+        };
+      }
+
+      // AI structuring of CV profile
+      try {
+        const structuredProfile = await optimizeWithLLM("cvStructure", {
+          rawText: extractedText,
+        });
+        profile = structuredProfile;
+      } catch (structError) {
+        console.error("CV structuring failed:", structError);
+        warnings.push("AI structuring failed; raw text will be stored.");
+        profile = { rawText: extractedText };
+      }
     }
 
-    // --- Cloudinary upload with fallback to local storage ---
+    // Cloudinary upload with fallback
     let originalFileUrl = "";
     let originalPublicId = "";
     let uploadedToCloudinary = false;
@@ -110,7 +136,7 @@ export async function POST(req: NextRequest) {
       const cloudinaryResult = await uploadToCloudinary(tempPath, {
         upload_preset: "jobapp",
         folder: "cv-uploads",
-        public_id: `${uniqueId}_${safeFilename}`, // ← Must be unique, cannot exist
+        public_id: `${uniqueId}_${safeFilename}`,
         resource_type: "raw",
       });
       originalFileUrl = cloudinaryResult.secure_url;
@@ -118,19 +144,26 @@ export async function POST(req: NextRequest) {
       uploadedToCloudinary = true;
     } catch (cloudinaryError) {
       console.warn(
-        "Cloudinary upload failed, falling back to local storage:",
+        "Cloudinary upload failed, saving locally:",
         cloudinaryError,
       );
+      warnings.push("Cloudinary upload failed; file stored locally.");
       const localUrl = await saveFileLocally(buffer, file.name);
       originalFileUrl = localUrl;
-      localFilePath = localUrl; // e.g., "/uploads/12345-my-cv.pdf"
+      localFilePath = localUrl;
       uploadedToCloudinary = false;
     }
+    const originalFileName = path.parse(file.name).name;
+    const friendlyName =
+      originalFileName.length > 50
+        ? originalFileName.slice(0, 47) + "..."
+        : originalFileName;
 
     // Create CVVersion record
     const cvVersion = await db.cVVersion.create({
       data: {
         userId: user.id,
+        name: friendlyName,
         parentId,
         fileHash,
         contentHash,
@@ -153,7 +186,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { cvVersion, reused: !!existingSemantic },
+      {
+        cvVersion,
+        reused: !!existingSemantic,
+        warnings: warnings.length > 0 ? warnings : undefined,
+      },
       { status: 201 },
     );
   } finally {
