@@ -615,7 +615,7 @@ export default function CVDetailPage() {
       <DeleteCVDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        cvName={displayName}
+        // cvName={displayName}
         onConfirm={handleDelete}
         isDeleting={deleteCV.isPending}
       />
