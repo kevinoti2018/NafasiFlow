@@ -7,229 +7,105 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-type ApplicationAiInsightsSnapshot {
-  confidence      Float
-  criticalGaps    ApplicationAiInsightsSnapshotCriticalGaps[]
-  eligibility     ApplicationAiInsightsSnapshotEligibility
-  matchScore      Int
-  meta            ApplicationAiInsightsSnapshotMeta
-  rankSignal      String
-  rationale       String
-  recommendations String[]
-  scoreBreakdown  ApplicationAiInsightsSnapshotScoreBreakdown
-  verdict         String
+//////////////////////////////
+// USER
+//////////////////////////////
+
+model User {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  email     String  @unique
+  firstName String?
+  lastName  String?
+  name      String?
+
+  // Auth
+  password           String?
+  image              String?
+  role               UserRole  @default(USER)
+  isPasswordSet      Boolean   @default(true)
+  isActive           Boolean   @default(false)
+  resetToken         String?   @unique
+  resetTokenExpiry   DateTime?
+  activationExpiry   DateTime?
+  activationToken    String?   @unique
+  // Template reuse
+  lastUsedTemplateId String?   @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts          Account[]
+  cvVersions        CVVersion[]
+  templates         Template[]
+  jobs              Job[]
+  applications      Application[]
+  emailLogs         EmailLog[]
+  passwordHistories PasswordHistory[]
+  cvJobAnalyses     CVJobAnalysis[]
+
+  @@index([isActive])
 }
 
-type ApplicationAiInsightsSnapshotCriticalGaps {
-  fix    String
-  gap    String
-  impact String
+enum UserRole {
+  USER
+  ADMIN
 }
 
-type ApplicationAiInsightsSnapshotEligibility {
-  isRemoteCompatible Boolean
-  seniorityGap       Int
+model PasswordHistory {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
 }
 
-type ApplicationAiInsightsSnapshotMeta {
-  version String
-}
-
-type ApplicationAiInsightsSnapshotScoreBreakdown {
-  experience Int
-  keywords   Int
-  seniority  Int
-  skills     Int
-}
-
-type CvJobAnalysisAnalysis {
-  confidence      Float
-  criticalGaps    CvJobAnalysisAnalysisCriticalGaps[]
-  eligibility     CvJobAnalysisAnalysisEligibility
-  matchScore      Int
-  meta            CvJobAnalysisAnalysisMeta
-  rankSignal      String
-  rationale       String
-  recommendations String[]
-  scoreBreakdown  CvJobAnalysisAnalysisScoreBreakdown
-  verdict         String
-}
-
-type CvJobAnalysisAnalysisCriticalGaps {
-  fix    String
-  gap    String
-  impact String
-}
-
-type CvJobAnalysisAnalysisEligibility {
-  isRemoteCompatible Boolean
-  seniorityGap       Int
-}
-
-type CvJobAnalysisAnalysisMeta {
-  version String
-}
-
-type CvJobAnalysisAnalysisScoreBreakdown {
-  experience Int
-  keywords   Int
-  seniority  Int
-  skills     Int
-}
-
-type CvVersionFormatIssues {
-  message  String
-  severity String
-  type     String
-}
-
-type CvVersionProfile {
-  education     CvVersionProfileEducation[]
-  experience    CvVersionProfileExperience[]
-  /// Could not determine type: the field only had null or empty values in the sample set.
-  projects      Json?
-  skills        String[]
-  skillsSection CvVersionProfileSkillsSection?
-  summary       String
-}
-
-type CvVersionProfileEducation {
-  degree      String
-  institution String
-  year        String
-}
-
-type CvVersionProfileExperience {
-  bullets  String[]
-  company  String
-  duration String?
-  priority String?
-  role     String
-}
-
-type CvVersionProfileSkillsSection {
-  Soft_Skills       String[] @map("Soft Skills")
-  Technical_Skills  String[] @map("Technical Skills")
-  Tools___Platforms String[] @map("Tools & Platforms")
-}
-
-type JobStructuredData {
-  companyDNA            String
-  idealCandidatePersona JobStructuredDataIdealCandidatePersona
-  keywords              JobStructuredDataKeywords
-  meta                  JobStructuredDataMeta
-  painPoints            JobStructuredDataPainPoints
-  parsed                JobStructuredDataParsed
-  requirements          JobStructuredDataRequirements
-}
-
-type JobStructuredDataIdealCandidatePersona {
-  description String
-  type        String
-}
-
-type JobStructuredDataKeywords {
-  atsCritical       String[]
-  recruiterTriggers String[]
-}
-
-type JobStructuredDataMeta {
-  version String
-}
-
-type JobStructuredDataPainPoints {
-  primaryChallenge  String
-  softSkillPriority String
-}
-
-type JobStructuredDataParsed {
-  function        String
-  level           String
-  normalizedTitle String
-}
-
-type JobStructuredDataRequirements {
-  mandatory JobStructuredDataRequirementsMandatory
-  preferred JobStructuredDataRequirementsPreferred
-}
-
-type JobStructuredDataRequirementsMandatory {
-  experience String
-  skills     String[]
-}
-
-type JobStructuredDataRequirementsPreferred {
-  /// Could not determine type: the field only had null or empty values in the sample set.
-  certifications Json?
-  skills         String[]
-}
+//////////////////////////////
+// ACCOUNT (NextAuth)
+//////////////////////////////
 
 model Account {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
-  /// Field referred in an index, but found no data to define the type.
-  provider          Json?
-  /// Field referred in an index, but found no data to define the type.
-  providerAccountId Json?
-  /// Field referred in an index, but found no data to define the type.
-  userId            Json?
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token String? @db.String
+  access_token  String? @db.String
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.String
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
 }
 
-model Application {
-  id                 String                        @id @default(auto()) @map("_id") @db.ObjectId
-  aiInsightsSnapshot ApplicationAiInsightsSnapshot
-  analysisVersion    BigInt
-  createdAt          DateTime                      @db.Date
-  cvVersionId        String                        @db.ObjectId
-  jobId              String                        @db.ObjectId
-  matchScore         Float
-  status             String
-  /// Could not determine type: the field only had null or empty values in the sample set.
-  templateId         Json?
-  updatedAt          DateTime                      @db.Date
-  userId             String                        @db.ObjectId
-
-  @@index([userId, createdAt])
-  @@index([jobId])
-  @@index([cvVersionId])
-  @@index([userId, status])
-}
-
-model CVJobAnalysis {
-  id              String                @id @default(auto()) @map("_id") @db.ObjectId
-  analysis        CvJobAnalysisAnalysis
-  analysisVersion BigInt
-  applicationId   String?               @unique @db.ObjectId
-  createdAt       DateTime              @db.Date
-  cvVersionId     String                @db.ObjectId
-  jobId           String                @db.ObjectId
-  matchScore      Float
-  rankSignal      String
-  userId          String                @db.ObjectId
-  verdict         String
-
-  @@unique([cvVersionId, jobId])
-  @@index([userId, matchScore])
-  @@index([jobId])
-  @@index([rankSignal])
-}
+//////////////////////////////
+// CV VERSION (ENHANCED with ATS intelligence)
+//////////////////////////////
 
 model CVVersion {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name   String?
+  userId               String      @db.ObjectId
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String?
   // Version lineage
-  parentId String?     @db.ObjectId
-  parent   CVVersion?  @relation("CVLineage", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children CVVersion[] @relation("CVLineage")
-  uploadedToCloudinary Boolean @default(false) // true once synced
-  localFilePath       String?
+  parentId             String?     @db.ObjectId
+  parent               CVVersion?  @relation("CVLineage", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children             CVVersion[] @relation("CVLineage")
+  uploadedToCloudinary Boolean     @default(false) // true once synced
+  localFilePath        String?
   // Structured CV (semantic layer)
-  profile Json
+  profile              Json
 
   // Template linkage
   templateId        String?   @db.ObjectId
@@ -264,33 +140,6 @@ model CVVersion {
   // Relations
   applications  Application[]
   cvJobAnalyses CVJobAnalysis[]
-  id                   String                  @id @default(auto()) @map("_id") @db.ObjectId
-  analysisVersion      BigInt
-  atsContentScore      BigInt
-  atsFormatScore       BigInt
-  contentHash          String?
-  createdAt            DateTime                @db.Date
-  fileHash             String?                 @unique
-  formatIssues         CvVersionFormatIssues[]
-  generatedFileUrl     String?
-  generatedPublicId    String?
-  impactScore          BigInt?
-  keywordCoverage      BigInt?
-  lastAnalyzedAt       DateTime?               @db.Date
-  /// Could not determine type: the field only had null or empty values in the sample set.
-  localFilePath        Json?
-  name                 String?
-  originalFileUrl      String
-  originalPublicId     String
-  parentId             String?                 @db.ObjectId
-  parserUsed           String?
-  parsingConfidence    BigInt?
-  profile              CvVersionProfile
-  source               String
-  /// Field referred in an index, but found no data to define the type.
-  templateId           Json?
-  uploadedToCloudinary Boolean
-  userId               String                  @db.ObjectId
 
   @@index([userId, createdAt])
   @@index([templateId])
@@ -299,90 +148,246 @@ model CVVersion {
   @@index([parsingConfidence])
 }
 
+enum CVSource {
+  upload
+  optimized
+  generated
+}
+
+//////////////////////////////
+// TEMPLATE
+//////////////////////////////
+
+model Template {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String
+  fileUrl String
+
+  metadata Json? // mapping / layout hints
+
+  type      TemplateType
+  isDefault Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  cvVersions   CVVersion[]
+  applications Application[]
+
+  @@index([userId, isDefault])
+  @@index([userId, createdAt])
+}
+
+enum TemplateType {
+  pdf
+  docx
+}
+
+//////////////////////////////
+// JOB (with deduplication and analysis status)
+//////////////////////////////
+
+model Job {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // User input
+  title      String? // optional, can be extracted by AI
+  company    String? // optional
+  rawContent String // original pasted JD text
+
+  // Deduplication (across all users)
+  contentHash String @unique // normalized SHA256
+
+  // AI analysis
+  structuredData  Json? // output from jdPrompt
+  analysisStatus  AnalysisStatus @default(pending)
+  analysisVersion Int            @default(1)
+  analyzedAt      DateTime? // when analysis completed
+
+  // Optional extracted fields for fast querying
+  normalizedTitle String? // e.g., "Senior Frontend Engineer"
+  function        String? // frontend, backend, fullstack, etc.
+  level           String? // junior, mid, senior, staff
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  applications  Application[]
+  cvJobAnalyses CVJobAnalysis[]
+
+  @@index([userId, createdAt])
+  @@index([analysisStatus])
+  @@index([normalizedTitle])
+}
+
+enum AnalysisStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+//////////////////////////////
+// APPLICATION
+//////////////////////////////
+
+model Application {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobId String @db.ObjectId
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  cvVersionId String    @db.ObjectId
+  cvVersion   CVVersion @relation(fields: [cvVersionId], references: [id], onDelete: Cascade)
+
+  templateId String?   @db.ObjectId
+  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  matchScore Float?
+
+  // Snapshot at time of application (immutable)
+  aiInsightsSnapshot Json
+
+  // Future-proofing AI evolution
+  analysisVersion Int? @default(1)
+
+  status ApplicationStatus
+
+  appliedAt DateTime?
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  // Relations
+  statusHistory StatusLog[]
+  cvJobAnalysis CVJobAnalysis? // One-to-one (optional)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([jobId])
+  @@index([cvVersionId])
+}
+
+//////////////////////////////
+// STATUS LOG
+//////////////////////////////
+
+model StatusLog {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  status    ApplicationStatus
+  changedAt DateTime          @default(now())
+
+  applicationId String      @db.ObjectId
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, changedAt])
+}
+
+//////////////////////////////
+// EMAIL LOGS
+//////////////////////////////
+
+enum EmailType {
+  WELCOME
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  ACCOUNT_DELETION
+  SECURITY_ALERT
+  MARKETING
+}
+
+enum EmailStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  OPENED
+}
+
 model EmailLog {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  /// Field referred in an index, but found no data to define the type.
-  messageId Json?  @unique
-  /// Field referred in an index, but found no data to define the type.
-  recipient Json?
-  /// Field referred in an index, but found no data to define the type.
-  status    Json?
-  /// Field referred in an index, but found no data to define the type.
-  type      Json?
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  recipient String
+  subject   String
+  type      EmailType
+  status    EmailStatus @default(QUEUED)
+
+  messageId String? @unique
+  error     String?
+
+  metadata Json?
+
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([recipient])
   @@index([status])
   @@index([type])
 }
 
-model Job {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  analysisStatus  String
-  analysisVersion BigInt
-  analyzedAt      DateTime          @db.Date
-  company         String
-  contentHash     String            @unique
-  createdAt       DateTime          @db.Date
-  function        String
-  level           String
-  normalizedTitle String
-  rawContent      String
-  structuredData  JobStructuredData
-  title           String
-  updatedAt       DateTime          @db.Date
-  userId          String            @db.ObjectId
+//////////////////////////////
+// APPLICATION STATUS
+//////////////////////////////
 
-  @@index([userId, createdAt])
-  @@index([normalizedTitle])
-  @@index([analysisStatus])
+enum ApplicationStatus {
+  saved
+  applied
+  interviewing
+  rejected
+  offered
 }
 
-model PasswordHistory {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  /// Field referred in an index, but found no data to define the type.
-  userId Json?
+//////////////////////////////
+// CV-JOB ANALYSIS (Independent, reusable, job‑contextual)
+//////////////////////////////
 
-  @@index([userId])
-}
+model CVJobAnalysis {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-model StatusLog {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  applicationId String   @db.ObjectId
-  changedAt     DateTime @db.Date
-  status        String
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([applicationId, changedAt])
-}
+  cvVersionId String    @db.ObjectId
+  cvVersion   CVVersion @relation(fields: [cvVersionId], references: [id], onDelete: Cascade)
 
-model Template {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  /// Field referred in an index, but found no data to define the type.
-  createdAt Json?
-  /// Field referred in an index, but found no data to define the type.
-  isDefault Json?
-  /// Field referred in an index, but found no data to define the type.
-  userId    Json?
+  jobId String @db.ObjectId
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
-  @@index([userId, isDefault])
-}
+  // Analysis results (job‑specific)
+  matchScore Float
+  analysis   Json // Full output from match/sell/optimize (includes contextual scores)
 
-model User {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  /// Field referred in an index, but found no data to define the type.
-  activationToken Json?    @unique
-  createdAt       DateTime @db.Date
-  email           String   @unique
-  firstName       String
-  isActive        Boolean
-  isPasswordSet   Boolean
-  lastName        String
-  name            String
-  password        String
-  /// Field referred in an index, but found no data to define the type.
-  resetToken      Json?    @unique
-  role            String
-  updatedAt       DateTime @db.Date
+  // Ranking & verdict
+  rankSignal String? // "top_10", "top_20", "not_recommended"
+  verdict    String? // "proceed", "consider", "high_risk"
 
-  @@index([isActive])
+  // Optional link to an application (one-to-one)
+  applicationId String?      @db.ObjectId
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  analysisVersion Int @default(1)
+
+  createdAt DateTime @default(now())
+
+  // Constraints & indexes
+  @@unique([cvVersionId, jobId]) // No duplicate analysis for same CV+Job
+  @@unique([applicationId]) // Enforce one-to-one with Application
+  @@index([userId, matchScore])
+  @@index([jobId])
+  @@index([rankSignal])
 }
