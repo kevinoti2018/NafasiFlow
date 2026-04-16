@@ -25,7 +25,7 @@ import { useCV, useOptimizeCV } from "@/hooks/use-cvs";
 import { useJobs } from "@/hooks/use-jobs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Job } from "@/lib/generated/prisma";
+import { Job } from "@prisma/client";
 
 export default function CVOptimizePage() {
   const { id } = useParams();

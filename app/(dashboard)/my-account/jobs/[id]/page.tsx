@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  BarChart3,
   Users,
   Briefcase,
   Building2,
@@ -26,9 +25,7 @@ import {
   Award,
   AlertCircle,
   MoreHorizontal,
-  Download,
   Share2,
-  ChevronRight,
   Lightbulb,
   Shield,
   BrainCircuit,
@@ -40,7 +37,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,12 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,

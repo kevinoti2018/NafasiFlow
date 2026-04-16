@@ -38,8 +38,7 @@ import { DeleteCVDialog } from "@/components/cv/delete-cv-dialog";
 import { useCV, useDeleteCV, useReanalyzeCV } from "@/hooks/use-cvs";
 import { useAnalysesByCV } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
-import { CVVersion } from "@/lib/generated/prisma";
-import { AnalysisService } from "@/services/analysis.service";
+import { CVVersion } from "@prisma/client";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
