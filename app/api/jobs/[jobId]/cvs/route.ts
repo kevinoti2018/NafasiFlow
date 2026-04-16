@@ -12,16 +12,17 @@ import { analysisListQuerySchema } from "@/lib/validations/analysis";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams, query;
   try {
-    validatedParams = await validateParams(params, jobIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, jobIdParamSchema);
     query = validateQuery(req, analysisListQuerySchema);
   } catch (error) {
     return (

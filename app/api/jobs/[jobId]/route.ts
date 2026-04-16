@@ -17,16 +17,17 @@ import { queueJobAnalysis } from "@/lib/queue";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams;
   try {
-    validatedParams = validateParams(params, jobIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, jobIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -51,16 +52,17 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams, body;
   try {
-    validatedParams = validateParams(params, jobIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, jobIdParamSchema);
     body = await validateBody(req, updateJobBodySchema);
   } catch (error) {
     return (
@@ -116,16 +118,17 @@ export async function PUT(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams, body;
   try {
-    validatedParams = validateParams(params, jobIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, jobIdParamSchema);
     body = await validateBody(req, patchJobBodySchema);
   } catch (error) {
     return (
@@ -160,16 +163,17 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { jobId: string } },
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams;
   try {
-    validatedParams = validateParams(params, jobIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, jobIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??

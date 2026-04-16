@@ -3,18 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
 import {
-  validateBody,
   validateParams,
+  validateBody,
   handleZodError,
 } from "@/lib/utils/validate";
 import {
   appIdParamSchema,
   updateApplicationBodySchema,
 } from "@/lib/validations/application";
+import type { Prisma } from "@prisma/client";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { appId: string } },
+  { params }: { params: Promise<{ appId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -23,7 +24,8 @@ export async function GET(
 
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, appIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(resolvedParams, appIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -38,7 +40,7 @@ export async function GET(
       cvVersion: true,
       template: true,
       cvJobAnalysis: true,
-      statusHistory: { orderBy: { changedAt: "desc" } },
+      statusHistory: { orderBy: { changedAt: "asc" } },
     },
   });
 
@@ -54,7 +56,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { appId: string } },
+  { params }: { params: Promise<{ appId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -63,7 +65,8 @@ export async function PATCH(
 
   let validatedParams, body;
   try {
-    validatedParams = await validateParams(params, appIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(resolvedParams, appIdParamSchema);
     body = await validateBody(req, updateApplicationBodySchema);
   } catch (error) {
     return (
@@ -83,11 +86,12 @@ export async function PATCH(
     );
   }
 
-  const { status, templateId, appliedAt } = body;
-  const updateData: any = {};
-  if (status !== undefined) updateData.status = status;
-  if (templateId !== undefined) updateData.templateId = templateId;
-  if (appliedAt !== undefined) updateData.appliedAt = new Date(appliedAt);
+  // ✅ Use UncheckedUpdateInput to allow scalar fields like templateId
+  const updateData: Prisma.ApplicationUncheckedUpdateInput = {};
+  if (body.status !== undefined) updateData.status = body.status;
+  if (body.templateId !== undefined) updateData.templateId = body.templateId;
+  if (body.appliedAt !== undefined)
+    updateData.appliedAt = new Date(body.appliedAt);
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(
@@ -101,11 +105,11 @@ export async function PATCH(
     data: updateData,
   });
 
-  if (status && status !== oldApp.status) {
+  if (body.status && body.status !== oldApp.status) {
     await db.statusLog.create({
       data: {
         applicationId: validatedParams.appId,
-        status,
+        status: body.status,
         changedAt: new Date(),
       },
     });
@@ -116,7 +120,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { appId: string } },
+  { params }: { params: Promise<{ appId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -125,7 +129,8 @@ export async function DELETE(
 
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, appIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(resolvedParams, appIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -143,6 +148,7 @@ export async function DELETE(
     );
   }
 
+  // Only allow deletion if status is 'saved' or 'rejected'
   if (application.status !== "saved" && application.status !== "rejected") {
     return NextResponse.json(
       { error: "Cannot delete application in progress" },
@@ -150,6 +156,7 @@ export async function DELETE(
     );
   }
 
+  // Remove link from CVJobAnalysis
   await db.cVJobAnalysis.updateMany({
     where: { applicationId: validatedParams.appId },
     data: { applicationId: null },

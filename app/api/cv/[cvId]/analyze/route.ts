@@ -12,16 +12,17 @@ import { optimizeWithLLM } from "@/lib/utils/llmclient";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { cvId: string } },
+  { params }: { params: Promise<{ cvId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const resolvedParams = await params;
 
   let validatedParams, body;
   try {
-    validatedParams = await validateParams(params, cvIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, cvIdParamSchema);
     body = await validateBody(req, analyzeCVBodySchema);
   } catch (error) {
     return (
