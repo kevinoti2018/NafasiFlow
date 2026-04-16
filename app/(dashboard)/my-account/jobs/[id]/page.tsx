@@ -87,7 +87,7 @@ import {
 import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
 import { CreateApplicationModal } from "@/components/jobs/create-application-modal";
-import { useCreateApplication } from "@/hooks/use-application";
+
 // Enhanced status configuration with executive styling
 const statusConfig = {
   pending: {
@@ -1013,6 +1013,20 @@ export default function JobDetailPage() {
                                 className="text-slate-600"
                               >
                                 View CV
+                              </Button>
+                              {/* ✅ New Details button linking to analysis page */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  router.push(
+                                    `/my-account/analysis/${analysis.id}`,
+                                  )
+                                }
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <BarChart3 className="h-4 w-4 mr-1" />
+                                Details
                               </Button>
                               <Button
                                 variant="ghost"

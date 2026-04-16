@@ -37,7 +37,7 @@ import {
   useApplicationTimeline,
   useUpdateApplication,
   useDeleteApplication,
-} from "@/hooks/use-applications";
+} from "@/hooks/use-application";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

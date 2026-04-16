@@ -25,11 +25,11 @@ const CONFIG = {
     models: (process.env.OPENROUTER_MODELS || "openrouter/free").split(","),
   },
   circuitBreaker: {
-    failureThreshold: 3,
-    recoveryMs: 60000,
+    failureThreshold: 5, // raised from 3 — more tolerance before opening circuit
+    recoveryMs: 30000, // lowered from 60s — recover faster after a blip
   },
   totalBudgetMs: 45000,
-  maxJsonRetries: 2,
+  maxJsonRetries: 3, // raised from 2 — extra retry before giving up on JSON
 } as const;
 
 // ===============================
@@ -93,6 +93,18 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Strip markdown code fences that free models commonly add around JSON output.
+ * e.g. ```json\n{...}\n``` → {...}
+ */
+function extractJson(raw: string): any {
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  return JSON.parse(stripped);
+}
+
 // ===============================
 // Provider implementations
 // ===============================
@@ -144,7 +156,7 @@ async function callOpenRouter(
     if (perModelTimeout < 500) break;
 
     try {
-      console.log(`[LLM] OpenRouter trying ${model}`);
+      console.log(`[LLM] OpenRouter trying model: ${model}`);
       const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -168,27 +180,35 @@ async function callOpenRouter(
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          `[LLM] ${model} HTTP ${response.status}: ${errorText.slice(0, 100)}`,
+          `[LLM] OpenRouter ${model} HTTP ${response.status}: ${errorText.slice(0, 200)}`,
         );
-        if (response.status === 404) {
+        if (
+          response.status === 404 ||
+          response.status === 429 ||
+          response.status >= 500
+        ) {
           modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
-        } else if (response.status >= 500 || response.status === 429) {
-          modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
+          console.warn(
+            `[LLM] OpenRouter model ${model} placed on cooldown for ${COOLDOWN_MS / 1000}s`,
+          );
         }
+        lastError = `${model}: HTTP ${response.status}`;
         continue;
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error("Empty content");
-      console.log(`[LLM] OpenRouter ${model} succeeded`);
+      if (!content) throw new Error(`Empty content from ${model}`);
+      console.log(`[LLM] OpenRouter ${model}: success`);
       return content;
     } catch (err: any) {
       lastError = `${model}: ${err.message}`;
+      console.error(`[LLM] OpenRouter ${model} threw:`, err.message);
       modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
     }
   }
-  throw new Error(lastError);
+
+  throw new Error(`OpenRouter exhausted all models. Last error — ${lastError}`);
 }
 
 // ===============================
@@ -203,15 +223,18 @@ async function callWithJsonRetry(
   for (let attempt = 1; attempt <= retriesLeft + 1; attempt++) {
     try {
       const raw = await providerFn(prompt, budgetRemaining);
-      const parsed = JSON.parse(raw);
+      // extractJson strips markdown fences before parsing — critical for free models
+      const parsed = extractJson(raw);
       return parsed;
     } catch (err: any) {
       if (attempt > retriesLeft) {
         throw new Error(
-          `JSON parse failed after ${retriesLeft + 1} attempts: ${err.message}`,
+          `JSON parse failed after ${retriesLeft + 1} attempt(s): ${err.message}`,
         );
       }
-      console.warn(`[LLM] JSON parse failed (attempt ${attempt}), retrying...`);
+      console.warn(
+        `[LLM] JSON parse failed (attempt ${attempt}/${retriesLeft + 1}), retrying in ${200 * attempt}ms...`,
+      );
       await sleep(200 * attempt);
     }
   }
@@ -232,26 +255,26 @@ type OptimizeInput = {
 };
 
 // ===============================
-// Main public function (supports custom prompts)
+// Main public function
 // ===============================
 export async function optimizeWithLLM<T = any>(
   promptType: PromptType,
   inputData: OptimizeInput,
 ): Promise<T> {
   const startTime = Date.now();
-  console.log(`[LLM] Starting ${promptType} optimization`);
+  console.log(`[LLM] Starting "${promptType}" optimization`);
 
+  // ── Build prompt ──────────────────────────────────────────────────
   let prompt: string;
 
-  // Handle custom prompt type
   if (promptType === "custom") {
     if (!inputData.customPrompt) {
       throw new Error('customPrompt is required when promptType is "custom"');
     }
     prompt = inputData.customPrompt;
   } else {
-    // Use predefined prompt functions
     let promptFn: (input: any) => string;
+
     switch (promptType) {
       case "match":
         promptFn = prompts.match;
@@ -271,7 +294,7 @@ export async function optimizeWithLLM<T = any>(
       default:
         throw new Error(`Unknown prompt type: ${promptType}`);
     }
-    // ✅ Validate required fields based on prompt type
+
     if (promptType === "cvStructure") {
       if (!inputData.rawText) {
         throw new Error(`rawText is required for prompt type: ${promptType}`);
@@ -293,31 +316,45 @@ export async function optimizeWithLLM<T = any>(
     }
   }
 
-  // Try OpenRouter first if its circuit is closed
-  if (isCircuitClosed("openrouter")) {
+  // ── OpenRouter (primary) ──────────────────────────────────────────
+  if (!isCircuitClosed("openrouter")) {
+    console.warn(
+      `[LLM] OpenRouter circuit is OPEN (failures: ${providerFailures.get("openrouter") ?? 0}) — skipping straight to Gemini fallback`,
+    );
+  } else {
     try {
       const remainingBudget = CONFIG.totalBudgetMs - (Date.now() - startTime);
       const result = await callWithJsonRetry(
-        (p, budget) => callOpenRouter(p, budget || remainingBudget),
+        (p, budget) => callOpenRouter(p, budget ?? remainingBudget),
         prompt,
         remainingBudget,
       );
       resetCircuit("openrouter");
       console.log(
-        `[LLM] ${promptType} completed via OpenRouter in ${Date.now() - startTime}ms`,
+        `[LLM] "${promptType}" completed via OpenRouter in ${Date.now() - startTime}ms`,
       );
       return result as T;
     } catch (err) {
       recordFailure("openrouter");
-      console.error("[LLM] OpenRouter failed, falling back to Gemini", err);
+      console.error(
+        `[LLM] OpenRouter failed — total failures now: ${providerFailures.get("openrouter") ?? 0}. ` +
+          `Falling back to Gemini. Reason:`,
+        err,
+      );
     }
   }
 
-  // Fallback to Gemini
+  // ── Gemini (last resort only) ─────────────────────────────────────
   const elapsed = Date.now() - startTime;
   if (elapsed > CONFIG.totalBudgetMs - CONFIG.gemini.timeoutMs) {
-    throw new Error("Total budget exhausted before Gemini fallback");
+    throw new Error(
+      `Total budget exhausted (${elapsed}ms elapsed) before Gemini fallback could run`,
+    );
   }
+
+  console.warn(
+    `[LLM] Falling back to Gemini for "${promptType}" — check OpenRouter logs above to diagnose`,
+  );
 
   try {
     const result = await callWithJsonRetry(
@@ -326,12 +363,12 @@ export async function optimizeWithLLM<T = any>(
       CONFIG.totalBudgetMs - elapsed,
     );
     console.log(
-      `[LLM] ${promptType} completed via Gemini in ${Date.now() - startTime}ms`,
+      `[LLM] "${promptType}" completed via Gemini (fallback) in ${Date.now() - startTime}ms`,
     );
     return result as T;
   } catch (err) {
     throw new Error(
-      `Both providers failed: ${err instanceof Error ? err.message : String(err)}`,
+      `Both providers failed for "${promptType}": ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }

@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   FileText,
   Layout,
+  Pencil,
   TrendingUp,
   Briefcase,
   Sparkles,
@@ -40,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
+import { CVEditModal } from "@/components/cv/cv-edit-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +63,7 @@ import { useAnalysesByCV } from "@/hooks/use-analysis";
 import { useJobs } from "@/hooks/use-jobs";
 import { useAnalyzeCVWithJob } from "@/hooks/use-job-analysis";
 import { cn } from "@/lib/utils";
-
+import { CVInput } from "@/lib/ai/prompts";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
@@ -224,7 +225,7 @@ export default function CVDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
-
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const { data, isLoading, error } = useCV(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByCV(
     id as string,
@@ -333,7 +334,15 @@ export default function CVDetailPage() {
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Preview</span>
             </Button>
-
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditModalOpen(true)}
+              className="gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -1067,6 +1076,20 @@ export default function CVDetailPage() {
           </TabsContent>
         </Tabs>
 
+        <CVEditModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          cvId={cv.id}
+          initialData={cv.profile as CVInput}
+          cvName={displayName}
+          onRestructure={async () => {
+            const res = await fetch(`/api/cv/${cv.id}/restructure`, {
+              method: "POST",
+            });
+            if (!res.ok) throw new Error("Restructuring failed");
+            await refetch(); // Refresh the CV data
+          }}
+        />
         <DeleteCVDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
