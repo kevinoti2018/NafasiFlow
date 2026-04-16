@@ -7,7 +7,7 @@ import { analysisIdParamSchema } from "@/lib/validations/analysis";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { analysisId: string } },
+  { params }: { params: Promise<{ analysisId: string }> }, // ✅ params is a Promise
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -16,7 +16,8 @@ export async function GET(
 
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, analysisIdParamSchema);
+    // ✅ Await params before validation
+    validatedParams = await validateParams(await params, analysisIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -51,7 +52,7 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { analysisId: string } },
+  { params }: { params: Promise<{ analysisId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -60,7 +61,7 @@ export async function DELETE(
 
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, analysisIdParamSchema);
+    validatedParams = await validateParams(await params, analysisIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
