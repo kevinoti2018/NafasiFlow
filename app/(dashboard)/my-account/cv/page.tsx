@@ -296,8 +296,14 @@ export default function CVPage() {
 
                     {/* Scores - Desktop */}
                     <div className="hidden md:flex items-center gap-6">
-                      <ScoreBadge score={cv.atsFormatScore} label="Format" />
-                      <ScoreBadge score={cv.atsContentScore} label="Content" />
+                      <ScoreBadge
+                        score={Number(cv.atsFormatScore)}
+                        label="Format"
+                      />
+                      <ScoreBadge
+                        score={Number(cv.atsContentScore)}
+                        label="Content"
+                      />
                     </div>
 
                     {/* Actions */}
