@@ -39,6 +39,7 @@ import { useCV, useDeleteCV, useReanalyzeCV } from "@/hooks/use-cvs";
 import { useAnalysesByCV } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
 import { CVVersion } from "@prisma/client";
+import { AnalysisResult } from "@/app/types/analysis";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",

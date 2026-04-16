@@ -76,8 +76,8 @@ import {
 } from "@/hooks/use-job-analysis";
 import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
-import { CVVersion } from "@/lib/generated/prisma";
-
+import { CVVersion } from "@prisma/client";
+import { AnalysisResult } from "@/app/types/analysis";
 // Enhanced status configuration with executive styling
 const statusConfig = {
   pending: {
