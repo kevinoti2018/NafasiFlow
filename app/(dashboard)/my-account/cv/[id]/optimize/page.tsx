@@ -25,6 +25,7 @@ import { useCV, useOptimizeCV } from "@/hooks/use-cvs";
 import { useJobs } from "@/hooks/use-jobs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Job } from "@/lib/generated/prisma";
 
 export default function CVOptimizePage() {
   const { id } = useParams();
@@ -77,10 +78,11 @@ export default function CVOptimizePage() {
         <CardHeader>
           <CardTitle>Optimize CV</CardTitle>
           <CardDescription>
-            Generate an improved version of "
+            Generate an improved version of `&quot;`
             {cv.name ||
               `CV from ${new Date(cv.createdAt).toLocaleDateString()}`}
-            ". Choose general ATS optimization or tailor it to a specific job.
+            `&quot;`. Choose general ATS optimization or tailor it to a specific
+            job.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -135,7 +137,7 @@ export default function CVOptimizePage() {
                     <SelectValue placeholder="Choose a job" />
                   </SelectTrigger>
                   <SelectContent>
-                    {jobs.map((job) => (
+                    {jobs.map((job: Job) => (
                       <SelectItem key={job.id} value={job.id}>
                         {job.title} @ {job.company}
                       </SelectItem>

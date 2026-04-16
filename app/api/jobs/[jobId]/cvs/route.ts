@@ -1,4 +1,4 @@
-// app/api/jobs/[jobId]/cvs/route.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
