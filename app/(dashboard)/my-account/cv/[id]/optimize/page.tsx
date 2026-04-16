@@ -74,6 +74,9 @@ const optimizationTypes = {
     estimatedTime: "~30 seconds",
   },
 };
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Job } from "@prisma/client";
 
 export default function CVOptimizePage() {
   const { id } = useParams();
@@ -148,6 +151,88 @@ export default function CVOptimizePage() {
       <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-4xl space-y-6">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="container mx-auto py-8 max-w-2xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Optimize CV</CardTitle>
+          <CardDescription>
+            Generate an improved version of `&quot;`
+            {cv.name ||
+              `CV from ${new Date(cv.createdAt).toLocaleDateString()}`}
+            `&quot;`. Choose general ATS optimization or tailor it to a specific
+            job.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* CV info (read‑only) */}
+          <div className="space-y-1">
+            <Label>CV being optimized</Label>
+            <div className="p-3 border rounded-md bg-muted/50">
+              <p className="font-medium">
+                {cv.name ||
+                  `CV from ${new Date(cv.createdAt).toLocaleDateString()}`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Uploaded {new Date(cv.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Optimization type */}
+          <div className="space-y-2">
+            <Label>Optimization type</Label>
+            <RadioGroup
+              value={optimizationType}
+              onValueChange={(val) =>
+                setOptimizationType(val as "general" | "job")
+              }
+              className="flex flex-col space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="general" id="general" />
+                <Label htmlFor="general">
+                  General ATS Improvement (content & format)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="job" id="job" />
+                <Label htmlFor="job">
+                  Job‑Tailored (rewrite for a specific job)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Job selection (only if job-tailored) */}
+          {optimizationType === "job" && (
+            <div className="space-y-2">
+              <Label>Select target job</Label>
+              {jobsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a job" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobs.map((job: Job) => (
+                      <SelectItem key={job.id} value={job.id}>
+                        {job.title} @ {job.company}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          <Alert>
+            <AlertDescription>
+              Optimization may take up to 30 seconds. A new optimized CV version
+              will be created, linked to the original.
+            </AlertDescription>
+          </Alert>
+
           <Button
             variant="ghost"
             size="sm"

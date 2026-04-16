@@ -35,6 +35,7 @@ import { CVFormModal } from "@/components/cv/cv-form-modal";
 import { DeleteCVDialog } from "@/components/cv/delete-cv-dialog";
 import { useCVs, useUploadCV, useDeleteCV } from "@/hooks/use-cvs";
 import { cn } from "@/lib/utils";
+import { CVVersion } from "@prisma/client";
 
 const sourceConfig = {
   upload: {
@@ -79,7 +80,7 @@ export default function CVPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [deletingCV, setDeletingCV] = useState<any>(null);
+  const [deletingCV, setDeletingCV] = useState<CVVersion | null>(null);
 
   const { data, isLoading } = useCVs();
   const uploadCV = useUploadCV();
@@ -87,7 +88,7 @@ export default function CVPage() {
 
   const cvs = data?.cvVersions || [];
 
-  const filteredCVs = cvs.filter((cv) =>
+  const filteredCVs = cvs.filter((cv: CVVersion) =>
     (cv.name || "Untitled").toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -138,7 +139,10 @@ export default function CVPage() {
           <Card className="bg-gradient-to-br from-emerald-50/50 to-transparent border-emerald-100">
             <CardContent className="pt-4">
               <div className="text-2xl font-bold text-emerald-700">
-                {cvs.filter((c) => (c.atsFormatScore || 0) >= 80).length}
+                {
+                  cvs.filter((c: CVVersion) => (c.atsFormatScore || 0) >= 80)
+                    .length
+                }
               </div>
               <p className="text-xs text-emerald-600/80 font-medium uppercase tracking-wide">
                 ATS Ready
@@ -150,7 +154,8 @@ export default function CVPage() {
               <div className="text-2xl font-bold text-violet-700">
                 {
                   cvs.filter(
-                    (c) => c.source === "optimized" || c.source === "generated",
+                    (c: CVVersion) =>
+                      c.source === "optimized" || c.source === "generated",
                   ).length
                 }
               </div>
@@ -162,7 +167,10 @@ export default function CVPage() {
           <Card className="bg-gradient-to-br from-amber-50/50 to-transparent border-amber-100">
             <CardContent className="pt-4">
               <div className="text-2xl font-bold text-amber-700">
-                {cvs.filter((c) => (c.atsFormatScore || 0) < 60).length}
+                {
+                  cvs.filter((c: CVVersion) => (c.atsFormatScore || 0) < 60)
+                    .length
+                }
               </div>
               <p className="text-xs text-amber-600/80 font-medium uppercase tracking-wide">
                 Needs Work
@@ -238,7 +246,7 @@ export default function CVPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredCVs.map((cv) => {
+              {filteredCVs.map((cv: CVVersion) => {
                 const source =
                   sourceConfig[cv.source as keyof typeof sourceConfig] ||
                   sourceConfig.upload;
@@ -288,8 +296,14 @@ export default function CVPage() {
 
                     {/* Scores - Desktop */}
                     <div className="hidden md:flex items-center gap-6">
-                      <ScoreBadge score={cv.atsFormatScore} label="Format" />
-                      <ScoreBadge score={cv.atsContentScore} label="Content" />
+                      <ScoreBadge
+                        score={Number(cv.atsFormatScore)}
+                        label="Format"
+                      />
+                      <ScoreBadge
+                        score={Number(cv.atsContentScore)}
+                        label="Content"
+                      />
                     </div>
 
                     {/* Actions */}
@@ -350,7 +364,7 @@ export default function CVPage() {
       <DeleteCVDialog
         open={!!deletingCV}
         onOpenChange={() => setDeletingCV(null)}
-        cvName={deletingCV?.name}
+        // cvName={deletingCV?.name}
         onConfirm={handleDelete}
         isDeleting={deleteCV.isPending}
       />

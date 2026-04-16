@@ -1,4 +1,5 @@
 // app/(dashboard)/cv/[id]/page.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -64,6 +65,8 @@ import { useJobs } from "@/hooks/use-jobs";
 import { useAnalyzeCVWithJob } from "@/hooks/use-job-analysis";
 import { cn } from "@/lib/utils";
 import { CVInput } from "@/lib/ai/prompts";
+import { CVVersion } from "@prisma/client";
+import { AnalysisResult } from "@/app/types/analysis";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
@@ -261,6 +264,20 @@ export default function CVDetailPage() {
 
   const isOptimized = overallScore >= 80;
   const needsWork = overallScore < 60;
+  const analysesCount = analyses?.analyses?.length ?? 0;
+  return (
+    <div className="container mx-auto py-6 px-4 sm:px-6 space-y-6 max-w-7xl">
+      {/* Breadcrumb & Header */}
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/cv")}
+          className="gap-2 text-muted-foreground hover:text-foreground -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Documents
+        </Button>
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -427,6 +444,100 @@ export default function CVDetailPage() {
 
               {/* Score Details */}
               <div className="flex-1 w-full space-y-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Format Score"
+          value={cv.atsFormatScore !== null ? `${cv.atsFormatScore}%` : "—"}
+          description="ATS layout & structure"
+          icon={Layout}
+          trend={
+            formatScore >= 80 ? "up" : formatScore >= 60 ? "neutral" : "down"
+          }
+        />
+        <StatCard
+          title="Content Score"
+          value={cv.atsContentScore !== null ? `${cv.atsContentScore}%` : "—"}
+          description="Keywords & achievements"
+          icon={TrendingUp}
+          trend={
+            contentScore >= 80 ? "up" : contentScore >= 60 ? "neutral" : "down"
+          }
+        />
+        <StatCard
+          title="Parsing Confidence"
+          value={
+            cv.parsingConfidence !== null ? `${cv.parsingConfidence}%` : "—"
+          }
+          description="Data extraction accuracy"
+          icon={FileText}
+        />
+        <StatCard
+          title="Job Matches"
+          value={String(analyses?.analyses?.length || 0)}
+          description="Analyzed positions"
+          icon={Briefcase}
+        />
+      </div>
+
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="overview" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="format" className="gap-2">
+            <Layout className="h-4 w-4" />
+            Format Analysis
+            {hasIssues && (
+              <span className="ml-1 w-2 h-2 rounded-full bg-red-500" />
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="jobs" className="gap-2">
+            <Briefcase className="h-4 w-4" />
+            Job Matches
+            {analysesCount > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {analysesCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="versions" className="gap-2">
+            <GitBranch className="h-4 w-4" />
+            Versions
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                Extracted Profile
+              </CardTitle>
+              <CardDescription>
+                Structured data identified from your CV
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted/50 rounded-lg p-4 overflow-auto max-h-[500px]">
+                <pre className="text-sm font-mono leading-relaxed">
+                  {JSON.stringify(cv.profile, null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="format" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold">
                     {isOptimized
@@ -487,12 +598,93 @@ export default function CVDetailPage() {
                       </span>
                     </div>
                     <Progress value={contentScore} className="h-2.5" />
+                {hasIssues && (
+                  <Badge variant="destructive" className="gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {formatIssues.length} issue
+                    {formatIssues.length !== 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {hasIssues ? (
+                <div className="space-y-3">
+                  {formatIssues.map(
+                    (
+                      issue: {
+                        type: string;
+                        severity: string;
+                        message: string;
+                      },
+                      idx: number,
+                    ) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "flex items-start gap-4 p-4 rounded-xl border transition-colors",
+                          issue.severity === "high"
+                            ? "bg-red-50/50 border-red-200 hover:border-red-300"
+                            : issue.severity === "medium"
+                              ? "bg-amber-50/50 border-amber-200 hover:border-amber-300"
+                              : "bg-blue-50/50 border-blue-200 hover:border-blue-300",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-2 h-2 mt-2 rounded-full flex-shrink-0",
+                            issue.severity === "high"
+                              ? "bg-red-500"
+                              : issue.severity === "medium"
+                                ? "bg-amber-500"
+                                : "bg-blue-500",
+                          )}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-sm">
+                              {issue.type}
+                            </h4>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-xs capitalize",
+                                issue.severity === "high"
+                                  ? "border-red-200 text-red-700 bg-red-50"
+                                  : issue.severity === "medium"
+                                    ? "border-amber-200 text-amber-700 bg-amber-50"
+                                    : "border-blue-200 text-blue-700 bg-blue-50",
+                              )}
+                            >
+                              {issue.severity}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {issue.message}
+                          </p>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 space-y-3">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                   </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+          ) : analyses?.analyses?.length ? (
+            <div className="space-y-3">
+              {analyses.analyses.map((analysis: AnalysisResult) => {
+                const verdict =
+                  verdictConfig[
+                    analysis.verdict as keyof typeof verdictConfig
+                  ] || verdictConfig.consider;
+                const VerdictIcon = verdict.icon;
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -648,6 +840,14 @@ export default function CVDetailPage() {
                 {hasIssues ? (
                   <div className="space-y-3">
                     {formatIssues.map((issue, idx) => (
+              )}
+              {cv.children && cv.children.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">
+                    Optimized versions ({cv.children.length})
+                  </p>
+                  <div className="space-y-2">
+                    {cv.children.map((child: CVVersion) => (
                       <div
                         key={idx}
                         className={cn(
@@ -1105,6 +1305,13 @@ export default function CVDetailPage() {
           title={displayName}
         />
       </div>
+      <DeleteCVDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        // cvName={displayName}
+        onConfirm={handleDelete}
+        isDeleting={deleteCV.isPending}
+      />
     </div>
   );
 }
@@ -1154,6 +1361,15 @@ function CVNotFound() {
           Back to Documents
         </Button>
       </div>
+      <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
+      <p className="text-muted-foreground mb-6">
+        The CV you`&apos;`re looking for doesn`&apos;`t exist or you
+        don`&apos;`t have permission to access it.
+      </p>
+      <Button onClick={() => (window.location.href = "/cv")} className="gap-2">
+        <ArrowLeft className="h-4 w-4" />
+        Return to Documents
+      </Button>
     </div>
   );
 }

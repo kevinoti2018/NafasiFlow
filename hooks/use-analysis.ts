@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/use-analysis.ts
 import { useQuery } from "@tanstack/react-query";
 import { AnalysisService } from "@/services/analysis.service";
@@ -12,6 +13,7 @@ export const analysisKeys = {
     [...analysisKeys.all, "cv", cvId, params] as const,
 };
 
+import { AnalysisResult } from "@/app/types/analysis";
 export function useAnalysesByJob(
   jobId: string,
   params?: { page?: number; limit?: number },
@@ -29,6 +31,8 @@ export function useAnalysesByCV(
 ) {
   return useQuery({
     queryKey: analysisKeys.byCV(cvId, params),
+  return useQuery<{ analyses: AnalysisResult[]; pagination: any }>({
+    queryKey: ["analyses", "cv", cvId, params],
     queryFn: () => AnalysisService.getByCV(cvId, params),
     enabled: !!cvId,
   });

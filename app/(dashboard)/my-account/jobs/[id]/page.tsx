@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  BarChart3,
   Users,
   Briefcase,
   Building2,
@@ -26,9 +25,7 @@ import {
   Award,
   AlertCircle,
   MoreHorizontal,
-  Download,
   Share2,
-  ChevronRight,
   Lightbulb,
   Shield,
   BrainCircuit,
@@ -40,7 +37,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,12 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -68,7 +59,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { JobFormModal } from "@/components/jobs/job-form-modal";
 import { DeleteJobDialog } from "@/components/jobs/delete-job-dialog";
 import {
@@ -88,6 +78,8 @@ import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
 import { CreateApplicationModal } from "@/components/jobs/create-application-modal";
 
+import { CVVersion } from "@prisma/client";
+import { AnalysisResult } from "@/app/types/analysis";
 // Enhanced status configuration with executive styling
 const statusConfig = {
   pending: {
@@ -183,13 +175,12 @@ export default function JobDetailPage() {
   const job = data?.job;
   const cvs = cvsData?.cvVersions || [];
 
-  const structured = job?.structuredData as any;
+  const structured = job?.structuredData;
   const isAnalyzed = job?.analysisStatus === "completed" && structured;
   const canManuallyAnalyze = ["pending", "processing", "failed"].includes(
     job?.analysisStatus,
   );
-  const userTier = "pro";
-  const allowManualRetry = userTier !== "free";
+  const allowManualRetry = true;
 
   const handleRetry = () => {
     if (job?.id) retryAnalysis.mutate(job.id);
@@ -232,7 +223,8 @@ export default function JobDetailPage() {
   const isAnalyzing = analyzeMutation.isPending;
   const isReanalyzing = reanalyzeMutation.isPending;
   // Calculate match statistics
-  const matchScores = analyses?.analyses?.map((a: any) => a.matchScore) || [];
+  const matchScores =
+    analyses?.analyses?.map((a: AnalysisResult) => a.matchScore) || [];
   const avgMatchScore =
     matchScores.length > 0
       ? Math.round(
@@ -529,11 +521,13 @@ export default function JobDetailPage() {
                         !descriptionExpanded && "line-clamp-6",
                       )}
                     >
-                      {job.rawContent.split("\n").map((line, i) => (
-                        <p key={i} className="mb-2">
-                          {line || "\u00A0"}
-                        </p>
-                      ))}
+                      {job.rawContent
+                        .split("\n")
+                        .map((line: string, i: number) => (
+                          <p key={i} className="mb-2">
+                            {line || "\u00A0"}
+                          </p>
+                        ))}
                     </div>
                     <Button
                       variant="ghost"
@@ -883,12 +877,12 @@ export default function JobDetailPage() {
                               No CVs found. Upload one first.
                             </SelectItem>
                           ) : (
-                            cvs.map((cv) => (
+                            cvs.map((cv: CVVersion) => (
                               <SelectItem key={cv.id} value={cv.id}>
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4" />
-                                  {cv.name ||
-                                    `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`}
+                                  {{cv.name ||
+                                  `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`}
                                 </div>
                               </SelectItem>
                             ))
@@ -951,12 +945,13 @@ export default function JobDetailPage() {
                     </div>
                   ) : analyses?.analyses?.length ? (
                     <div className="space-y-3">
-                      {analyses.analyses.map((analysis: any, index: number) => {
-                        const verdict =
-                          verdictColors[
-                            analysis.verdict as keyof typeof verdictColors
-                          ];
-                        const VerdictIcon = verdict?.icon || AlertCircle;
+                      {analyses.analyses.map(
+                        (analysis: AnalysisResult, index: number) => {
+                          const verdict =
+                            verdictColors[
+                              analysis.verdict as keyof typeof verdictColors
+                            ];
+                          const VerdictIcon = verdict?.icon || AlertCircle;
 
                         return (
                           <div
@@ -1037,29 +1032,95 @@ export default function JobDetailPage() {
                                 disabled={reanalyzeMutation.isPending}
                               >
                                 <RefreshCw
+                          return (
+                            <div
+                              key={analysis.id}
+                              className="group relative flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all"
+                            >
+                              <div className="flex items-start gap-4">
+                                <div
                                   className={cn(
-                                    "h-4 w-4 mr-1",
-                                    reanalyzeMutation.isPending &&
-                                      "animate-spin",
+                                    "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold",
+                                    getScoreBg(analysis.matchScore),
+                                    "text-white",
                                   )}
-                                />
-                                Re-run
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleDeleteAnalysis(analysis.id)
-                                }
-                                disabled={deleteAnalysisMutation.isPending}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                >
+                                  {analysis.matchScore}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                                      CV #{index + 1}
+                                    </span>
+                                    <span className="text-xs text-slate-500">
+                                      {formatDistanceToNow(
+                                        new Date(analysis.cvVersion.createdAt),
+                                        { addSuffix: true },
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Badge
+                                      className={cn(
+                                        verdict?.bg,
+                                        verdict?.text,
+                                        verdict?.border,
+                                        "border",
+                                      )}
+                                    >
+                                      <VerdictIcon className="w-3 h-3 mr-1" />
+                                      {verdict?.label || analysis.verdict}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-4 sm:mt-0">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    router.push(
+                                      `/my-account/cv/${analysis.cvVersionId}`,
+                                    )
+                                  }
+                                  className="text-slate-600"
+                                >
+                                  View CV
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleReanalyze(analysis.cvVersionId)
+                                  }
+                                  disabled={reanalyzeMutation.isPending}
+                                >
+                                  <RefreshCw
+                                    className={cn(
+                                      "h-4 w-4 mr-1",
+                                      reanalyzeMutation.isPending &&
+                                        "animate-spin",
+                                    )}
+                                  />
+                                  Re-run
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteAnalysis(analysis.id)
+                                  }
+                                  disabled={deleteAnalysisMutation.isPending}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        },
+                      )}
                     </div>
                   ) : (
                     <div className="py-12 text-center">
@@ -1150,8 +1211,8 @@ function JobNotFound() {
           Position Not Found
         </h2>
         <p className="text-slate-500 mb-6">
-          The job you're looking for doesn't exist or you don't have access to
-          it.
+          The job you`&apos;`re looking for doesn`&apos;`t exist or you
+          don`&apos;`t have access to it.
         </p>
         <Button onClick={() => (window.location.href = "/jobs")} size="lg">
           <ArrowLeft className="mr-2 h-4 w-4" />
