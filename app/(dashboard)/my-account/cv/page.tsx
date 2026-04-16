@@ -364,7 +364,7 @@ export default function CVPage() {
       <DeleteCVDialog
         open={!!deletingCV}
         onOpenChange={() => setDeletingCV(null)}
-        cvName={deletingCV?.name}
+        // cvName={deletingCV?.name}
         onConfirm={handleDelete}
         isDeleting={deleteCV.isPending}
       />

@@ -2,7 +2,7 @@
 // hooks/use-analysis.ts
 import { useQuery } from "@tanstack/react-query";
 import { AnalysisService } from "@/services/analysis.service";
-
+import { AnalysisResult } from "@/app/types/analysis";
 export function useAnalysesByJob(
   jobId: string,
   params?: { page?: number; limit?: number },
