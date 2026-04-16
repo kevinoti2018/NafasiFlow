@@ -7,16 +7,17 @@ import { cvIdParamSchema } from "@/lib/validations/cv";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { cvId: string } },
+  { params }: { params: Promise<{ cvId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, cvIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, cvIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -43,16 +44,17 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { cvId: string } },
+  { params }: { params: Promise<{ cvId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const resolvedParams = await params;
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, cvIdParamSchema);
+    validatedParams = await validateParams(resolvedParams, cvIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??
