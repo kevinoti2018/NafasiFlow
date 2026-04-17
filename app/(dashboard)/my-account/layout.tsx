@@ -25,11 +25,6 @@ export default async function MyAccountLayout({
           url: "/my-account",
           iconName: "LayoutDashboard",
         },
-        {
-          title: "Analyze",
-          url: "my-account/analyze",
-          iconName: "Brain",
-        },
       ],
     },
     {

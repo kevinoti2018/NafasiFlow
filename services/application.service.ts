@@ -1,12 +1,12 @@
 // lib/services/application.service.ts
-import {
-  CreateApplicationInput,
-  UpdateApplicationInput,
+import type {
+  CreateApplicationBody,
+  UpdateApplicationBody,
   ApplicationListQuery,
 } from "@/lib/validations/application";
 
 export const ApplicationService = {
-  create: async (data: CreateApplicationInput) => {
+  create: async (data: CreateApplicationBody) => {
     const response = await fetch("/api/applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,7 +41,7 @@ export const ApplicationService = {
     return result;
   },
 
-  update: async (appId: string, data: UpdateApplicationInput) => {
+  update: async (appId: string, data: UpdateApplicationBody) => {
     const response = await fetch(`/api/applications/${appId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

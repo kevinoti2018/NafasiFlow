@@ -12,6 +12,8 @@ import {
   applicationListQuerySchema,
 } from "@/lib/validations/application";
 import { optimizeWithLLM } from "@/lib/utils/llmclient";
+import { Prisma } from "@prisma/client";
+import { CVInput } from "@/lib/ai/prompts";
 
 export async function GET(req: NextRequest) {
   const session = await getCurrentUser();
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const { page, limit, status, jobId, cvVersionId } = query;
   const skip = (page - 1) * limit;
-  const where: any = { userId: session.id };
+  const where: Prisma.ApplicationWhereInput = { userId: session.id };
   if (status) where.status = status;
   if (jobId) where.jobId = jobId;
   if (cvVersionId) where.cvVersionId = cvVersionId;
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
   });
   if (!analysis) {
     const matchResult = await optimizeWithLLM("match", {
-      cv: cvVersion.profile as any,
+      cv: cvVersion.profile as CVInput,
       job: {
         title: job.title || "",
         company: job.company || "",
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest) {
       cvVersionId,
       templateId: templateId || null,
       matchScore: analysis.matchScore,
-      aiInsightsSnapshot: analysis.analysis,
+      aiInsightsSnapshot: analysis.analysis as Prisma.InputJsonValue,
       analysisVersion: cvVersion.analysisVersion,
       status: "saved",
     },

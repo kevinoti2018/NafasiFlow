@@ -107,7 +107,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { message: error.errors[0].message },
+        { message: error.issues[0].message },
         { status: 400 },
       );
     }

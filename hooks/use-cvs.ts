@@ -108,3 +108,33 @@ export function useReanalyzeCV() {
     },
   });
 }
+
+export function useUpdateCV() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      cvId,
+      data,
+    }: {
+      cvId: string;
+      data: { name?: string; profile?: any };
+    }) => {
+      const response = await fetch(`/api/cv/${cvId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Update failed");
+      return result;
+    },
+    onSuccess: (_, { cvId }) => {
+      queryClient.invalidateQueries({ queryKey: cvKeys.detail(cvId) });
+      queryClient.invalidateQueries({ queryKey: cvKeys.lists() });
+      toast.success("CV updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Update failed");
+    },
+  });
+}

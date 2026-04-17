@@ -1,4 +1,5 @@
 // app/(dashboard)/cv/[id]/page.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -32,14 +33,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteCVDialog } from "@/components/cv/delete-cv-dialog";
 import { useCV, useDeleteCV, useReanalyzeCV } from "@/hooks/use-cvs";
 import { useAnalysesByCV } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-
+import { AnalysisResult } from "@/app/types/analysis";
+import { CVVersion } from "@prisma/client";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
@@ -103,7 +103,7 @@ export default function CVDetailPage() {
   const handleDelete = async () => {
     if (!cv) return;
     await deleteCV.mutateAsync(cv.id);
-    router.push("/cv");
+    router.push("/my-acccount/cv");
   };
 
   const handleReanalyze = () => {
@@ -382,53 +382,62 @@ export default function CVDetailPage() {
             <CardContent>
               {hasIssues ? (
                 <div className="space-y-3">
-                  {formatIssues.map((issue, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "flex items-start gap-4 p-4 rounded-xl border transition-colors",
-                        issue.severity === "high"
-                          ? "bg-red-50/50 border-red-200 hover:border-red-300"
-                          : issue.severity === "medium"
-                            ? "bg-amber-50/50 border-amber-200 hover:border-amber-300"
-                            : "bg-blue-50/50 border-blue-200 hover:border-blue-300",
-                      )}
-                    >
+                  {formatIssues.map(
+                    (
+                      issue: {
+                        type: string;
+                        severity: string;
+                        message: string;
+                      },
+                      idx: number,
+                    ) => (
                       <div
+                        key={idx}
                         className={cn(
-                          "w-2 h-2 mt-2 rounded-full flex-shrink-0",
+                          "flex items-start gap-4 p-4 rounded-xl border transition-colors",
                           issue.severity === "high"
-                            ? "bg-red-500"
+                            ? "bg-red-50/50 border-red-200 hover:border-red-300"
                             : issue.severity === "medium"
-                              ? "bg-amber-500"
-                              : "bg-blue-500",
+                              ? "bg-amber-50/50 border-amber-200 hover:border-amber-300"
+                              : "bg-blue-50/50 border-blue-200 hover:border-blue-300",
                         )}
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-sm">
-                            {issue.type}
-                          </h4>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs capitalize",
-                              issue.severity === "high"
-                                ? "border-red-200 text-red-700 bg-red-50"
-                                : issue.severity === "medium"
-                                  ? "border-amber-200 text-amber-700 bg-amber-50"
-                                  : "border-blue-200 text-blue-700 bg-blue-50",
-                            )}
-                          >
-                            {issue.severity}
-                          </Badge>
+                      >
+                        <div
+                          className={cn(
+                            "w-2 h-2 mt-2 rounded-full flex-shrink-0",
+                            issue.severity === "high"
+                              ? "bg-red-500"
+                              : issue.severity === "medium"
+                                ? "bg-amber-500"
+                                : "bg-blue-500",
+                          )}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-sm">
+                              {issue.type}
+                            </h4>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-xs capitalize",
+                                issue.severity === "high"
+                                  ? "border-red-200 text-red-700 bg-red-50"
+                                  : issue.severity === "medium"
+                                    ? "border-amber-200 text-amber-700 bg-amber-50"
+                                    : "border-blue-200 text-blue-700 bg-blue-50",
+                              )}
+                            >
+                              {issue.severity}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {issue.message}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {issue.message}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 space-y-3">
@@ -456,7 +465,7 @@ export default function CVDetailPage() {
             </div>
           ) : analyses?.analyses?.length ? (
             <div className="space-y-3">
-              {analyses.analyses.map((analysis) => {
+              {analyses.analyses.map((analysis: AnalysisResult) => {
                 const verdict =
                   verdictConfig[
                     analysis.verdict as keyof typeof verdictConfig
@@ -467,7 +476,9 @@ export default function CVDetailPage() {
                   <Card
                     key={analysis.id}
                     className="group hover:shadow-md transition-all cursor-pointer"
-                    onClick={() => router.push(`/jobs/${analysis.jobId}`)}
+                    onClick={() =>
+                      router.push(`/my-account/jobs/${analysis.jobId}`)
+                    }
                   >
                     <CardContent className="p-5">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -494,7 +505,7 @@ export default function CVDetailPage() {
                           className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(`/jobs/${analysis.jobId}`);
+                            router.push(`/my-account/jobs/${analysis.jobId}`);
                           }}
                         >
                           View Job
@@ -565,7 +576,7 @@ export default function CVDetailPage() {
                     Optimized versions ({cv.children.length})
                   </p>
                   <div className="space-y-2">
-                    {cv.children.map((child) => (
+                    {cv.children.map((child: CVVersion) => (
                       <div
                         key={child.id}
                         className="flex justify-between items-center border-b pb-2 last:border-0"
@@ -574,7 +585,9 @@ export default function CVDetailPage() {
                           <Button
                             variant="link"
                             className="p-0 h-auto font-medium"
-                            onClick={() => router.push(`/cv/${child.id}`)}
+                            onClick={() =>
+                              router.push(`/my-account/cv/${child.id}`)
+                            }
                           >
                             View optimized CV
                           </Button>
@@ -647,8 +660,8 @@ function CVNotFound() {
       </div>
       <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
       <p className="text-muted-foreground mb-6">
-        The CV you're looking for doesn't exist or you don't have permission to
-        access it.
+        The CV you`&apos;`,re looking for doesn`&apos;`,t exist or you
+        don`&apos;`,t have permission to access it.
       </p>
       <Button onClick={() => (window.location.href = "/cv")} className="gap-2">
         <ArrowLeft className="h-4 w-4" />

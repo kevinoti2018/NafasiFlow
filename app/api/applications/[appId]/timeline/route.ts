@@ -7,7 +7,7 @@ import { appIdParamSchema } from "@/lib/validations/application";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { appId: string } },
+  { params }: { params: Promise<{ appId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -16,7 +16,8 @@ export async function GET(
 
   let validatedParams;
   try {
-    validatedParams = await validateParams(params, appIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(resolvedParams, appIdParamSchema);
   } catch (error) {
     return (
       handleZodError(error) ??

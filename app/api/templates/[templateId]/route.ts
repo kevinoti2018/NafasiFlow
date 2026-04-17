@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/templates/[templateId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
@@ -15,7 +16,7 @@ import { deleteFromCloudinary } from "@/lib/utils/cloudinary";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { templateId: string } },
+  { params }: { params: Promise<{ templateId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -24,7 +25,11 @@ export async function GET(
 
   let validatedParams;
   try {
-    validatedParams = validateParams(params, templateIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(
+      resolvedParams,
+      templateIdParamSchema,
+    );
   } catch (error) {
     return (
       handleZodError(error) ??
@@ -57,7 +62,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { templateId: string } },
+  { params }: { params: Promise<{ templateId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -66,7 +71,11 @@ export async function PATCH(
 
   let validatedParams, body;
   try {
-    validatedParams = validateParams(params, templateIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(
+      resolvedParams,
+      templateIdParamSchema,
+    );
     body = await validateBody(req, updateTemplateBodySchema);
   } catch (error) {
     return (
@@ -82,6 +91,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
+  // Build update data with explicit type
+  const updateData: { name?: string; isDefault?: boolean } = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.isDefault !== undefined) updateData.isDefault = body.isDefault;
+
+  // If setting as default, unset others
   if (body.isDefault === true) {
     await db.template.updateMany({
       where: {
@@ -95,7 +110,7 @@ export async function PATCH(
 
   const template = await db.template.update({
     where: { id: validatedParams.templateId },
-    data: body,
+    data: updateData,
   });
 
   return NextResponse.json({ template });
@@ -103,7 +118,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { templateId: string } },
+  { params }: { params: Promise<{ templateId: string }> },
 ) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -112,7 +127,11 @@ export async function DELETE(
 
   let validatedParams;
   try {
-    validatedParams = validateParams(params, templateIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(
+      resolvedParams,
+      templateIdParamSchema,
+    );
   } catch (error) {
     return (
       handleZodError(error) ??

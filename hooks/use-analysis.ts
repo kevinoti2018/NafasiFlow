@@ -12,6 +12,13 @@ export function useAnalysesByJob(
     enabled: !!jobId,
   });
 }
+export function useAnalysis(analysisId: string) {
+  return useQuery({
+    queryKey: ["analyses", "detail", analysisId],
+    queryFn: () => AnalysisService.get(analysisId),
+    enabled: !!analysisId,
+  });
+}
 
 export function useAnalysesByCV(
   cvId: string,

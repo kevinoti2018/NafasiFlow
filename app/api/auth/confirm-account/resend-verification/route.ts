@@ -71,6 +71,7 @@ const handleResend = async (email: string) => {
     await tx.emailLog.create({
       data: {
         userId: user.id,
+        subject: "Account Activation",
         recipient: user.email,
         type: EmailType.EMAIL_VERIFICATION,
         status: EmailStatus.PENDING,

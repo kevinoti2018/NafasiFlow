@@ -21,6 +21,7 @@ export type CVInput = {
     description: string;
     technologies: string[];
   }>;
+  rawText?: string;
 };
 
 export type JobInput = {
@@ -30,8 +31,23 @@ export type JobInput = {
   requirements?: string[];
   niceToHave?: string[];
 };
+interface StructuredJDParsed {
+  normalizedTitle?: string;
+  level?: string;
+  function?: string;
+}
 
-export type PromptFn<T = any> = (input: T) => string;
+interface StructuredJDPainPoints {
+  primaryChallenge?: string;
+  softSkillPriority?: string;
+}
+
+interface StructuredJD {
+  parsed?: StructuredJDParsed;
+  painPoints?: StructuredJDPainPoints;
+  [key: string]: unknown; // allow other fields from the JD analysis
+}
+export type PromptFn<T = Record<string, unknown>> = (input: T) => string;
 
 // ===============================
 // VERSION & SYSTEM CONFIG
@@ -66,7 +82,7 @@ Mechanical Rules (STRICT):
 export const matchPrompt: PromptFn<{
   cv: CVInput;
   job: JobInput;
-  structuredJD?: any;
+  structuredJD?: StructuredJD;
 }> = ({ cv, job, structuredJD }) => `
 ${SYSTEM_PROMPT}
 
@@ -257,6 +273,37 @@ ${job.niceToHave ? `\nNICE TO HAVE:\n${JSON.stringify(job.niceToHave)}` : ""}
 `;
 
 // ===============================
+// 5. CV STRUCTURE PROMPT (Convert raw text to structured CV)
+// ===============================
+
+export const cvStructurePrompt: PromptFn<{ rawText: string }> = ({
+  rawText,
+}) => `
+${SYSTEM_PROMPT}
+
+TASK: Extract structured CV data from the raw text below.
+Return a JSON object matching the CVInput schema.
+
+CVInput schema:
+{
+  summary?: string,
+  experience?: Array<{ role: string, company: string, duration: string, bullets: string[] }>,
+  skills?: string[],
+  education?: Array<{ degree: string, institution: string, year: string }>,
+  projects?: Array<{ name: string, description: string, technologies: string[] }>
+}
+
+Rules:
+- Infer as much as possible from the text.
+- For missing fields, omit them or use empty arrays.
+- Do not invent information.
+- Use the exact schema field names.
+
+Raw CV text:
+${rawText.slice(0, 8000)}
+`;
+
+// ===============================
 // REGISTRY
 // ===============================
 
@@ -265,6 +312,7 @@ export const prompts = {
   sell: sellPrompt,
   optimize: optimizePrompt,
   jd: jdPrompt,
+  cvStructure: cvStructurePrompt,
 };
 
 export type PromptType = keyof typeof prompts | "custom";

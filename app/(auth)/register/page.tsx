@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Flame, CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
 import { RegisterForm } from "@/components/auth/RegisterForm";
-
+import { Suspense } from "react";
 export default function RegisterPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-muted/30 p-4 dark:bg-slate-950">
@@ -93,8 +93,11 @@ export default function RegisterPage() {
               Start tracking your career growth today
             </p>
           </div>
-
-          <RegisterForm />
+          <Suspense
+            fallback={<div className="p-4 text-center">Loading...</div>}
+          >
+            <RegisterForm />
+          </Suspense>
 
           <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
             Already have an account?{" "}
