@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileX2, AlertTriangle } from "lucide-react";
+import { FileX2 } from "lucide-react";
 
 interface DeleteCVDialogProps {
   open: boolean;
