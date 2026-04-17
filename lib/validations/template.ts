@@ -14,7 +14,7 @@ export const createTemplateBodySchema = z.object({
 export const updateTemplateBodySchema = z.object({
   name: z.string().optional(),
   isDefault: z.boolean().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const createTemplateSchema = z.object({
@@ -26,7 +26,7 @@ export const createTemplateSchema = z.object({
 export const updateTemplateSchema = z.object({
   name: z.string().optional(),
   isDefault: z.boolean().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const templateListQuerySchema = z.object({
