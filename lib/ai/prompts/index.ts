@@ -21,6 +21,7 @@ export type CVInput = {
     description: string;
     technologies: string[];
   }>;
+  rawText?: string;
 };
 
 export type JobInput = {
@@ -31,7 +32,7 @@ export type JobInput = {
   niceToHave?: string[];
 };
 
-export type PromptFn<T = any> = (input: T) => string;
+export type PromptFn<T = Record<string, unknown>> = (input: T) => string;
 
 // ===============================
 // VERSION & SYSTEM CONFIG
@@ -66,7 +67,7 @@ Mechanical Rules (STRICT):
 export const matchPrompt: PromptFn<{
   cv: CVInput;
   job: JobInput;
-  structuredJD?: any;
+  structuredJD?: Record<string, unknown>;
 }> = ({ cv, job, structuredJD }) => `
 ${SYSTEM_PROMPT}
 

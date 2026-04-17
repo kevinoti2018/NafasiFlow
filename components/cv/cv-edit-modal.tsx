@@ -57,9 +57,7 @@ export function CVEditModal({
   };
 
   const isRawText =
-    (profile as any)?.rawText &&
-    !profile.summary &&
-    !profile.experience?.length;
+    profile?.rawText && !profile.summary && !profile.experience?.length;
   const hasStructuredData =
     !isRawText &&
     (profile.summary || profile.experience?.length || profile.skills?.length);
@@ -162,7 +160,11 @@ export function CVEditModal({
         { role: "", company: "", duration: "", bullets: [""] },
       ],
     }));
-  const updateExperience = (idx: number, field: string, value: any) => {
+  const updateExperience = (
+    idx: number,
+    field: string,
+    value: string | string[],
+  ) => {
     const newExp = [...(profile.experience || [])];
     newExp[idx] = { ...newExp[idx], [field]: value };
     setProfile((prev) => ({ ...prev, experience: newExp }));
@@ -215,11 +217,12 @@ export function CVEditModal({
         { name: "", description: "", technologies: [] },
       ],
     }));
-  const updateProject = (idx: number, field: string, value: any) => {
+  const updateProject = (idx: number, field: string, value: string | string[]) => {
     const newProj = [...(profile.projects || [])];
     newProj[idx] = { ...newProj[idx], [field]: value };
     setProfile((prev) => ({ ...prev, projects: newProj }));
   };
+
   const removeProject = (idx: number) => {
     const newProj = [...(profile.projects || [])];
     newProj.splice(idx, 1);
@@ -274,7 +277,6 @@ export function CVEditModal({
           "sm:w-[95vw] sm:h-[90vh] sm:max-w-6xl sm:rounded-2xl sm:border-zinc-200 sm:dark:border-zinc-800 sm:shadow-2xl",
           "flex flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950",
         )}
-        hideCloseButton
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 shrink-0 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
