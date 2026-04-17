@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { useCVs } from "@/hooks/use-cvs";
 import { useCreateApplication } from "@/hooks/use-application";
 import { toast } from "sonner";
+import { CVVersion } from "@prisma/client";
 
 interface CreateApplicationModalProps {
   open: boolean;
@@ -59,8 +60,10 @@ export function CreateApplicationModal({
       setSelectedCvId("");
       setSelectedTemplateId("");
       if (onSuccess) onSuccess();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create application");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      toast.error(message);
     }
   };
 
@@ -87,7 +90,7 @@ export function CreateApplicationModal({
                     No CVs found. Upload one first.
                   </SelectItem>
                 ) : (
-                  cvs.map((cv) => (
+                  cvs.map((cv: CVVersion) => (
                     <SelectItem key={cv.id} value={cv.id}>
                       {cv.name ||
                         `CV from ${new Date(cv.createdAt).toLocaleDateString()}`}

@@ -86,8 +86,8 @@ export function CVEditModal({
             </div>
             <h3 className="text-lg font-semibold">CV Not Structured</h3>
             <p className="text-sm text-muted-foreground">
-              This CV hasn't been processed by AI yet. Please run AI analysis to
-              extract structured data before editing.
+              This CV hasn `&apos;`t been processed by AI yet. Please run AI
+              analysis to extract structured data before editing.
             </p>
             {onRestructure && (
               <button
@@ -217,7 +217,11 @@ export function CVEditModal({
         { name: "", description: "", technologies: [] },
       ],
     }));
-  const updateProject = (idx: number, field: string, value: string | string[]) => {
+  const updateProject = (
+    idx: number,
+    field: string,
+    value: string | string[],
+  ) => {
     const newProj = [...(profile.projects || [])];
     newProj[idx] = { ...newProj[idx], [field]: value };
     setProfile((prev) => ({ ...prev, projects: newProj }));

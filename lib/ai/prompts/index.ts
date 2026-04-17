@@ -31,7 +31,22 @@ export type JobInput = {
   requirements?: string[];
   niceToHave?: string[];
 };
+interface StructuredJDParsed {
+  normalizedTitle?: string;
+  level?: string;
+  function?: string;
+}
 
+interface StructuredJDPainPoints {
+  primaryChallenge?: string;
+  softSkillPriority?: string;
+}
+
+interface StructuredJD {
+  parsed?: StructuredJDParsed;
+  painPoints?: StructuredJDPainPoints;
+  [key: string]: unknown; // allow other fields from the JD analysis
+}
 export type PromptFn<T = Record<string, unknown>> = (input: T) => string;
 
 // ===============================
@@ -67,7 +82,7 @@ Mechanical Rules (STRICT):
 export const matchPrompt: PromptFn<{
   cv: CVInput;
   job: JobInput;
-  structuredJD?: Record<string, unknown>;
+  structuredJD?: StructuredJD;
 }> = ({ cv, job, structuredJD }) => `
 ${SYSTEM_PROMPT}
 
