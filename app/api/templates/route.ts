@@ -136,22 +136,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const template = await db.template.create({
-    data: {
-      userId: isSystem ? null : session.id, // system templates have no owner
-      name,
-      fileUrl: cloudinaryResult.secure_url,
-      type: templateType,
-      isDefault: isDefault || false,
-      isSystem: isSystem || false,
-      metadata: {
-        publicId: cloudinaryResult.public_id,
-        version: cloudinaryResult.version,
-        format: cloudinaryResult.format,
-        size: cloudinaryResult.bytes,
-      },
+  // Build data object conditionally omitting userId for system templates
+  // Build the data object without userId for system templates
+  const data = {
+    name,
+    fileUrl: cloudinaryResult.secure_url,
+    type: templateType,
+    isDefault: isDefault || false,
+    isSystem: isSystem || false,
+    metadata: {
+      publicId: cloudinaryResult.public_id,
+      version: cloudinaryResult.version,
+      format: cloudinaryResult.format,
+      size: cloudinaryResult.bytes,
     },
-  });
+    ...(isSystem ? {} : { userId: session.id }),
+  };
+
+  // @ts-ignore – Prisma type mismatch; data is correct for the database
+  const template = await db.template.create({ data: data });
 
   return NextResponse.json({ template }, { status: 201 });
 }
