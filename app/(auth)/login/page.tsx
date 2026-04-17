@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Flame, ShieldCheck, ArrowRight } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
-
+import { Suspense } from "react";
 export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-muted/30 p-4 dark:bg-slate-950">
@@ -25,9 +25,11 @@ export default function LoginPage() {
               Enter your credentials to access your dashboard
             </p>
           </div>
-
-          <LoginForm />
-
+          <Suspense
+            fallback={<div className="p-4 text-center">Loading...</div>}
+          >
+            <LoginForm />
+          </Suspense>
           <p className="mt-10 text-center text-sm text-slate-500 dark:text-slate-400">
             New to the platform?{" "}
             <Link
@@ -52,8 +54,8 @@ export default function LoginPage() {
 
             <blockquote>
               <p className="text-3xl font-bold leading-snug text-slate-900 dark:text-slate-100">
-                "Data-driven career growth starts with a single tracked
-                application."
+                `&quot;`Data-driven career growth starts with a single tracked
+                application. `&quot;`
               </p>
               <footer className="mt-4 text-sm text-slate-500 dark:text-slate-400">
                 — The Consistency Engine
