@@ -1,4 +1,3 @@
-// app/api/cv/[cvId]/generate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
@@ -15,10 +14,14 @@ import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
 import { optimizeWithLLM } from "@/lib/utils/llmclient";
+import type { CVInput } from "@/lib/ai/prompts";
 
 const generateBodySchema = z.object({
   forceRegenerate: z.boolean().optional().default(false),
+  templateId: z.string().nullable().optional(),
 });
+
+type GenerateBody = z.infer<typeof generateBodySchema>;
 
 export async function POST(
   req: NextRequest,
@@ -29,9 +32,11 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let validatedParams, body;
+  let validatedParams: { cvId: string };
+  let body: GenerateBody;
   try {
-    validatedParams = await validateParams(await params, cvIdParamSchema);
+    const resolvedParams = await params;
+    validatedParams = await validateParams(resolvedParams, cvIdParamSchema);
     body = await validateBody(req, generateBodySchema);
   } catch (error) {
     return (
@@ -47,39 +52,54 @@ export async function POST(
     return NextResponse.json({ error: "CV not found" }, { status: 404 });
   }
 
-  // If the CV already has a generated PDF and we are not forcing regeneration, return that URL
+  // If we have a cached PDF and not forcing regeneration, return it
   if (cv.generatedFileUrl && !body.forceRegenerate) {
     return NextResponse.json({ fileUrl: cv.generatedFileUrl, reused: true });
   }
 
-  // Check if the profile is raw text (needs structuring)
-  let profile = cv.profile as any;
-  if (
-    profile &&
+  // Prepare profile (ensure it's a structured CVInput)
+  let profile: CVInput = cv.profile as CVInput;
+  const isRawText =
     typeof profile === "object" &&
     "rawText" in profile &&
     !profile.summary &&
-    !profile.experience
-  ) {
-    // Raw text – call AI to structure it
+    !profile.experience?.length;
+
+  if (isRawText) {
     console.log("CV profile is raw text, restructuring via AI...");
     try {
       const structured = await optimizeWithLLM("cvStructure", {
-        rawText: profile.rawText,
+        rawText: (profile as { rawText: string }).rawText,
       });
-      profile = structured;
-      // Update the database with the structured profile
+      profile = structured as CVInput;
       await db.cVVersion.update({
         where: { id: cv.id },
         data: { profile },
       });
     } catch (err) {
       console.error("AI restructuring failed, falling back to raw text", err);
-      // Continue with raw text – PDF will be sparse
+      // Keep raw text – PDF will be sparse
     }
   }
 
-  // Generate PDF from the (now possibly structured) profile
+  // Determine template style from templateId
+  let templateStyle: "modern" | "classic" | "minimal" = "modern";
+  if (body.templateId) {
+    const template = await db.template.findFirst({
+      where: {
+        id: body.templateId,
+        OR: [{ userId: session.id }, { isSystem: true }],
+      },
+    });
+    if (template) {
+      const nameLower = template.name.toLowerCase();
+      if (nameLower.includes("classic")) templateStyle = "classic";
+      else if (nameLower.includes("minimal")) templateStyle = "minimal";
+      else templateStyle = "modern";
+    }
+  }
+
+  // Generate PDF
   const pdfBuffer = await generateCVPDF(profile);
 
   // Save temp file

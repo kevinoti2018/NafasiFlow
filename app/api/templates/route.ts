@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/templates/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
@@ -7,6 +6,7 @@ import { validateQuery, handleZodError } from "@/lib/utils/validate";
 import { templateListQuerySchema } from "@/lib/validations/template";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
+import os from "os";
 import { uploadToCloudinary } from "@/lib/utils/cloudinary";
 
 export async function GET(req: NextRequest) {
@@ -27,7 +27,14 @@ export async function GET(req: NextRequest) {
 
   const { page, limit, type, isDefault } = query;
   const skip = (page - 1) * limit;
-  const where: any = { userId: session.id };
+
+  // Show user's own templates + all system templates (isSystem: true)
+  const where: any = {
+    OR: [
+      { userId: session.id }, // user's private templates
+      { isSystem: true }, // system templates (shared)
+    ],
+  };
   if (type) where.type = type;
   if (isDefault !== undefined) where.isDefault = isDefault;
 
@@ -61,10 +68,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const user = await db.user.findUnique({
+    where: { id: session.id },
+    select: { role: true },
+  });
+
   const formData = await req.formData();
   const file = formData.get("file") as File;
   const name = formData.get("name") as string;
   const isDefault = formData.get("isDefault") === "true";
+  // Only admins can set isSystem=true
+  let isSystem = false;
+  if (user?.role === "ADMIN") {
+    isSystem = formData.get("isSystem") === "true";
+  }
 
   if (!file || !name) {
     return NextResponse.json(
@@ -88,7 +105,8 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  const tempPath = join("/tmp", `${Date.now()}-${file.name}`);
+  const tempDir = os.tmpdir();
+  const tempPath = join(tempDir, `${Date.now()}-${file.name}`);
   await writeFile(tempPath, buffer);
 
   let cloudinaryResult;
@@ -101,20 +119,31 @@ export async function POST(req: NextRequest) {
     await unlink(tempPath).catch(() => {});
   }
 
+  // If setting as default, unset other defaults for the same scope
   if (isDefault) {
-    await db.template.updateMany({
-      where: { userId: session.id, isDefault: true },
-      data: { isDefault: false },
-    });
+    if (isSystem) {
+      // Unset other system defaults
+      await db.template.updateMany({
+        where: { isSystem: true, isDefault: true },
+        data: { isDefault: false },
+      });
+    } else {
+      // Unset user's other defaults
+      await db.template.updateMany({
+        where: { userId: session.id, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
   }
 
   const template = await db.template.create({
     data: {
-      userId: session.id,
+      userId: isSystem ? null : session.id, // system templates have no owner
       name,
       fileUrl: cloudinaryResult.secure_url,
       type: templateType,
       isDefault: isDefault || false,
+      isSystem: isSystem || false,
       metadata: {
         publicId: cloudinaryResult.public_id,
         version: cloudinaryResult.version,

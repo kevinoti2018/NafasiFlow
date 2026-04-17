@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/templates/[templateId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
@@ -37,8 +36,12 @@ export async function GET(
     );
   }
 
+  // Allow access if the template belongs to the user OR it's a system template
   const template = await db.template.findFirst({
-    where: { id: validatedParams.templateId, userId: session.id },
+    where: {
+      id: validatedParams.templateId,
+      OR: [{ userId: session.id }, { isSystem: true }],
+    },
     include: {
       cvVersions: {
         take: 5,
@@ -84,11 +87,15 @@ export async function PATCH(
     );
   }
 
+  // Only allow editing if the user owns the template (system templates cannot be edited by regular users)
   const existing = await db.template.findFirst({
     where: { id: validatedParams.templateId, userId: session.id },
   });
   if (!existing) {
-    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Template not found or access denied" },
+      { status: 404 },
+    );
   }
 
   // Build update data with explicit type
@@ -96,7 +103,7 @@ export async function PATCH(
   if (body.name !== undefined) updateData.name = body.name;
   if (body.isDefault !== undefined) updateData.isDefault = body.isDefault;
 
-  // If setting as default, unset others
+  // If setting as default, unset others for the same user (or for system templates? but system templates are not editable by non-owners)
   if (body.isDefault === true) {
     await db.template.updateMany({
       where: {
@@ -139,13 +146,17 @@ export async function DELETE(
     );
   }
 
+  // Only allow deletion if the user owns the template
   const template = await db.template.findFirst({
     where: { id: validatedParams.templateId, userId: session.id },
     include: { cvVersions: true, applications: true },
   });
 
   if (!template) {
-    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Template not found or access denied" },
+      { status: 404 },
+    );
   }
 
   if (template.cvVersions.length > 0 || template.applications.length > 0) {

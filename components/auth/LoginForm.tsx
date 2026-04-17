@@ -13,7 +13,7 @@ export const LoginForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/my-account";
 
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<LoginInput>({

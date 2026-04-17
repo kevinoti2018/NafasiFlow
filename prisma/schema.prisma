@@ -167,8 +167,8 @@ model Template {
   name    String
   fileUrl String
 
-  metadata Json? // mapping / layout hints
-
+  metadata  Json? // mapping / layout hints
+  isSystem  Boolean      @default(false)
   type      TemplateType
   isDefault Boolean      @default(false)
 

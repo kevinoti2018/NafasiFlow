@@ -123,20 +123,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Cloudinary upload with fallback
+    // ===================== CLOUDINARY UPLOAD =====================
     let originalFileUrl = "";
     let originalPublicId = "";
     let uploadedToCloudinary = false;
     let localFilePath: string | null = null;
+
     const uniqueId = `${user.id}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const safeFilename = path
       .parse(file.name)
       .name.replace(/[^a-zA-Z0-9-_]/g, "_");
+    const extension = path.extname(file.name); // e.g., ".pdf" or ".docx"
+    const publicIdWithExt = `${uniqueId}_${safeFilename}${extension}`;
+
     try {
       const cloudinaryResult = await uploadToCloudinary(tempPath, {
         upload_preset: "jobapp",
         folder: "cv-uploads",
-        public_id: `${uniqueId}_${safeFilename}`,
+        public_id: publicIdWithExt,
         resource_type: "raw",
       });
       originalFileUrl = cloudinaryResult.secure_url;
@@ -153,6 +157,8 @@ export async function POST(req: NextRequest) {
       localFilePath = localUrl;
       uploadedToCloudinary = false;
     }
+
+    // Generate a friendly name from the original file name
     const originalFileName = path.parse(file.name).name;
     const friendlyName =
       originalFileName.length > 50

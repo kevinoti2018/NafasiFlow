@@ -15,7 +15,6 @@ export default async function MyAccountLayout({
 
   // Ensure we stay in the user context
   if (user?.role !== "USER") redirect("/dashboard");
-
   const sections = [
     {
       label: "Core",
@@ -24,6 +23,11 @@ export default async function MyAccountLayout({
           title: "Dashboard",
           url: "/my-account",
           iconName: "LayoutDashboard",
+        },
+        {
+          title: "Analysis",
+          url: "/my-account/analysis",
+          iconName: "BrainCircuit",
         },
       ],
     },
