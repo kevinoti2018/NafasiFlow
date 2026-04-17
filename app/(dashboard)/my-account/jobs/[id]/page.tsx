@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  BarChart3,
   Users,
   Briefcase,
   Building2,
@@ -25,7 +26,9 @@ import {
   Award,
   AlertCircle,
   MoreHorizontal,
+  Download,
   Share2,
+  ChevronRight,
   Lightbulb,
   Shield,
   BrainCircuit,
@@ -37,6 +40,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +48,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -76,10 +85,9 @@ import {
 } from "@/hooks/use-job-analysis";
 import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
-import { CreateApplicationModal } from "@/components/jobs/create-application-modal";
-
+import type { AnalysisResult } from "@/app/types/analysis";
 import { CVVersion } from "@prisma/client";
-import { AnalysisResult } from "@/app/types/analysis";
+
 // Enhanced status configuration with executive styling
 const statusConfig = {
   pending: {
@@ -159,7 +167,7 @@ export default function JobDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [selectedCvId, setSelectedCvId] = useState<string>("");
-  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
+
   const { data, isLoading, error } = useJob(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByJob(
     id as string,
@@ -180,8 +188,8 @@ export default function JobDetailPage() {
   const canManuallyAnalyze = ["pending", "processing", "failed"].includes(
     job?.analysisStatus,
   );
-  const allowManualRetry = true;
 
+  const allowManualRetry = true;
   const handleRetry = () => {
     if (job?.id) retryAnalysis.mutate(job.id);
   };
@@ -195,7 +203,7 @@ export default function JobDetailPage() {
   const handleDelete = async () => {
     if (!job) return;
     await deleteJob.mutateAsync(job.id);
-    router.push("/my-account/jobs");
+    router.push("/jobs");
   };
 
   const handleAnalyze = () => {
@@ -219,9 +227,7 @@ export default function JobDetailPage() {
   const StatusConfig =
     statusConfig[job.analysisStatus as keyof typeof statusConfig];
   const StatusIcon = StatusConfig?.icon || Clock;
-  const isApplying = false; // This will be handled inside the modal – we don't track here.
-  const isAnalyzing = analyzeMutation.isPending;
-  const isReanalyzing = reanalyzeMutation.isPending;
+
   // Calculate match statistics
   const matchScores =
     analyses?.analyses?.map((a: AnalysisResult) => a.matchScore) || [];
@@ -248,11 +254,6 @@ export default function JobDetailPage() {
                   size="icon"
                   onClick={() => router.push("/my-account/jobs")}
                   className="mt-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-                  disabled={
-                    retryAnalysis.isPending ||
-                    analyzeMutation.isPending ||
-                    reanalyzeMutation.isPending
-                  }
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -314,18 +315,6 @@ export default function JobDetailPage() {
                       : "Retry Analysis"}
                   </Button>
                 )}
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setApplicationModalOpen(true)}
-                  className="gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
-                  disabled={
-                    retryAnalysis.isPending || analyzeMutation.isPending
-                  }
-                >
-                  <Briefcase className="h-4 w-4" />
-                  Apply
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -881,8 +870,8 @@ export default function JobDetailPage() {
                               <SelectItem key={cv.id} value={cv.id}>
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4" />
-                                  {{cv.name ||
-                                  `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`}
+                                  {cv.name ||
+                                    `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`}
                                 </div>
                               </SelectItem>
                             ))
@@ -953,85 +942,6 @@ export default function JobDetailPage() {
                             ];
                           const VerdictIcon = verdict?.icon || AlertCircle;
 
-                        return (
-                          <div
-                            key={analysis.id}
-                            className="group relative flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all"
-                          >
-                            <div className="flex items-start gap-4">
-                              <div
-                                className={cn(
-                                  "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold",
-                                  getScoreBg(analysis.matchScore),
-                                  "text-white",
-                                )}
-                              >
-                                {analysis.matchScore}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                                    CV #{index + 1}
-                                  </span>
-                                  <span className="text-xs text-slate-500">
-                                    {formatDistanceToNow(
-                                      new Date(analysis.cvVersion.createdAt),
-                                      { addSuffix: true },
-                                    )}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Badge
-                                    className={cn(
-                                      verdict?.bg,
-                                      verdict?.text,
-                                      verdict?.border,
-                                      "border",
-                                    )}
-                                  >
-                                    <VerdictIcon className="w-3 h-3 mr-1" />
-                                    {verdict?.label || analysis.verdict}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-4 sm:mt-0">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(
-                                    `/my-account/cv/${analysis.cvVersionId}`,
-                                  )
-                                }
-                                className="text-slate-600"
-                              >
-                                View CV
-                              </Button>
-                              {/* ✅ New Details button linking to analysis page */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  router.push(
-                                    `/my-account/analysis/${analysis.id}`,
-                                  )
-                                }
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              >
-                                <BarChart3 className="h-4 w-4 mr-1" />
-                                Details
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleReanalyze(analysis.cvVersionId)
-                                }
-                                disabled={reanalyzeMutation.isPending}
-                              >
-                                <RefreshCw
                           return (
                             <div
                               key={analysis.id}
@@ -1157,16 +1067,6 @@ export default function JobDetailPage() {
           onConfirm={handleDelete}
           isDeleting={deleteJob.isPending}
         />
-        <CreateApplicationModal
-          open={applicationModalOpen}
-          onOpenChange={setApplicationModalOpen}
-          jobId={job.id}
-          jobTitle={job.title}
-          onSuccess={() => {
-            // Optionally refetch data or show toast – modal already shows success toast
-            setApplicationModalOpen(false);
-          }}
-        />
       </div>
     </TooltipProvider>
   );
@@ -1211,8 +1111,8 @@ function JobNotFound() {
           Position Not Found
         </h2>
         <p className="text-slate-500 mb-6">
-          The job you`&apos;`re looking for doesn`&apos;`t exist or you
-          don`&apos;`t have access to it.
+          The job you`&apos;`,re looking for doesn`&apos;`,t exist or you
+          don`&apos;`,t have access to it.
         </p>
         <Button onClick={() => (window.location.href = "/jobs")} size="lg">
           <ArrowLeft className="mr-2 h-4 w-4" />

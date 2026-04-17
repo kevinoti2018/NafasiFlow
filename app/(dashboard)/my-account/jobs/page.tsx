@@ -9,22 +9,18 @@ import {
   Trash2,
   ExternalLink,
   Search,
-  Filter,
   MoreHorizontal,
   Briefcase,
   Building2,
-  TrendingUp,
   Clock,
   CheckCircle2,
   XCircle,
   RefreshCw,
   LayoutGrid,
   List,
-  ArrowUpDown,
-  Sparkles,
   BarChart3,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -63,6 +59,12 @@ import {
 } from "@/hooks/use-jobs";
 import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
+import { Job } from "@prisma/client";
+
+// Extended type to include _count from API response
+type JobWithCount = Job & {
+  _count?: { cvJobAnalyses?: number };
+};
 
 // Enhanced status configuration
 const statusConfig = {
@@ -98,15 +100,15 @@ export default function JobsPage() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState<any>(null);
-  const [deletingJob, setDeletingJob] = useState<any>(null);
+  const [editingJob, setEditingJob] = useState<Job | undefined>(undefined);
+  const [deletingJob, setDeletingJob] = useState<Job | undefined>(undefined);
 
   const { data, isLoading } = useJobs();
   const createJob = useCreateJob();
   const updateJob = useUpdateJob();
   const deleteJob = useDeleteJob();
 
-  const jobs = data?.jobs || [];
+  const jobs = (data?.jobs as JobWithCount[]) || [];
 
   // Calculate metrics
   const totalJobs = jobs.length;
@@ -115,18 +117,9 @@ export default function JobsPage() {
   ).length;
   const pendingJobs = jobs.filter((j) => j.analysisStatus === "pending").length;
   const totalAnalyses = jobs.reduce(
-    (acc, job) => acc + (job._count?.cvJobAnalyses || 0),
+    (acc, job) => acc + (job._count?.cvJobAnalyses ?? 0),
     0,
   );
-  // const avgMatchScore =
-  //   jobs.length > 0
-  //     ? Math.round(
-  //         jobs.reduce((acc, job) => {
-  //           const analyses = job._count?.cvJobAnalyses || 0;
-  //           return acc + analyses;
-  //         }, 0) / jobs.length,
-  //       )
-  //     : 0;
 
   // Filter jobs
   const filteredJobs = jobs.filter((job) => {
@@ -146,18 +139,18 @@ export default function JobsPage() {
   const handleUpdate = async (data: CreateJobBody) => {
     if (!editingJob) return;
     await updateJob.mutateAsync({ id: editingJob.id, data });
-    setEditingJob(null);
+    setEditingJob(undefined);
   };
 
   const handleDelete = async () => {
     if (!deletingJob) return;
     await deleteJob.mutateAsync(deletingJob.id);
-    setDeletingJob(null);
+    setDeletingJob(undefined);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-      {/* Executive Header */}
+      {/* Header */}
       <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b border-slate-200/50 dark:border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
@@ -190,8 +183,9 @@ export default function JobsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Executive KPI Cards */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Total Positions */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -210,6 +204,7 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
+          {/* Analyzed */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -239,6 +234,7 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
+          {/* CV Analyses */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -259,6 +255,7 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
+          {/* Pending */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -282,7 +279,6 @@ export default function JobsPage() {
 
         {/* Main Content */}
         <Card className="border-0 shadow-sm overflow-hidden">
-          {/* Toolbar */}
           <CardHeader className="border-b border-slate-100 dark:border-slate-800">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
@@ -292,9 +288,7 @@ export default function JobsPage() {
                   {filteredJobs.length !== 1 ? "s" : ""} found
                 </CardDescription>
               </div>
-
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                {/* Search */}
                 <div className="relative w-full sm:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
@@ -304,29 +298,23 @@ export default function JobsPage() {
                     className="pl-10 h-10"
                   />
                 </div>
-
-                {/* View Toggle */}
-                <div className="flex items-center gap-2">
-                  <Tabs
-                    value={viewMode}
-                    onValueChange={(v) => setViewMode(v as "list" | "grid")}
-                  >
-                    <TabsList className="h-10">
-                      <TabsTrigger value="list" className="gap-2">
-                        <List className="h-4 w-4" />
-                        <span className="hidden sm:inline">List</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="grid" className="gap-2">
-                        <LayoutGrid className="h-4 w-4" />
-                        <span className="hidden sm:inline">Grid</span>
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(v) => setViewMode(v as "list" | "grid")}
+                >
+                  <TabsList className="h-10">
+                    <TabsTrigger value="list" className="gap-2">
+                      <List className="h-4 w-4" />
+                      <span className="hidden sm:inline">List</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="grid" className="gap-2">
+                      <LayoutGrid className="h-4 w-4" />
+                      <span className="hidden sm:inline">Grid</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
             </div>
-
-            {/* Filters */}
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <Button
                 variant={statusFilter === "all" ? "default" : "outline"}
@@ -374,7 +362,6 @@ export default function JobsPage() {
                 ))}
               </div>
             ) : viewMode === "list" ? (
-              // List View
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -447,9 +434,9 @@ export default function JobsPage() {
                           <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium">
-                                {job._count?.cvJobAnalyses || 0}
+                                {job._count?.cvJobAnalyses ?? 0}
                               </span>
-                              {job._count?.cvJobAnalyses > 0 && (
+                              {(job._count?.cvJobAnalyses ?? 0) > 0 && (
                                 <span className="text-xs text-slate-400">
                                   analyses
                                 </span>
@@ -531,7 +518,6 @@ export default function JobsPage() {
                 </Table>
               </div>
             ) : (
-              // Grid View
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {filteredJobs.map((job) => {
@@ -588,7 +574,7 @@ export default function JobsPage() {
                             <div className="flex items-center gap-2 text-slate-500">
                               <BarChart3 className="h-4 w-4" />
                               <span>
-                                {job._count?.cvJobAnalyses || 0} analyses
+                                {job._count?.cvJobAnalyses ?? 0} analyses
                               </span>
                             </div>
                             <span className="text-slate-400">
@@ -640,7 +626,7 @@ export default function JobsPage() {
 
       <JobFormModal
         open={!!editingJob}
-        onOpenChange={() => setEditingJob(null)}
+        onOpenChange={() => setEditingJob(undefined)}
         initialData={editingJob}
         onSubmit={handleUpdate}
         isSubmitting={updateJob.isPending}
@@ -648,8 +634,8 @@ export default function JobsPage() {
 
       <DeleteJobDialog
         open={!!deletingJob}
-        onOpenChange={() => setDeletingJob(null)}
-        jobTitle={deletingJob?.title}
+        onOpenChange={() => setDeletingJob(undefined)}
+        jobTitle={deletingJob?.title ?? undefined}
         onConfirm={handleDelete}
         isDeleting={deleteJob.isPending}
       />

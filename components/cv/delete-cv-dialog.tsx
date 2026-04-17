@@ -15,7 +15,7 @@ import { FileX2, AlertTriangle } from "lucide-react";
 interface DeleteCVDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // cvName?: string;
+  cvName?: string;
   onConfirm: () => void;
   isDeleting?: boolean;
 }
@@ -23,7 +23,7 @@ interface DeleteCVDialogProps {
 export function DeleteCVDialog({
   open,
   onOpenChange,
-  // cvName,
+  cvName,
   onConfirm,
   isDeleting,
 }: DeleteCVDialogProps) {
@@ -40,7 +40,7 @@ export function DeleteCVDialog({
           <AlertDialogDescription className="text-center text-muted-foreground leading-relaxed">
             You are about to permanently delete{" "}
             <span className="font-medium text-foreground bg-muted px-1.5 py-0.5 rounded">
-              {/*cvName || "Untitled CV"*/}CV
+              {cvName || "Untitled CV"}
             </span>
             . This will remove all associated job applications and analysis
             history.

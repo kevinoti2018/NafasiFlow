@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   FileText,
   Layout,
-  Pencil,
   TrendingUp,
   Briefcase,
   Sparkles,
@@ -22,13 +21,6 @@ import {
   Download,
   RefreshCw,
   GitBranch,
-  ChevronRight,
-  Zap,
-  Shield,
-  Award,
-  MoreHorizontal,
-  FileSearch,
-  Edit3,
 } from "lucide-react";
 import {
   Card,
@@ -42,81 +34,36 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CVEditModal } from "@/components/cv/cv-edit-modal";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DeleteCVDialog } from "@/components/cv/delete-cv-dialog";
-import { CVPreviewModal } from "@/components/cv/cv-preview-modal";
 import { useCV, useDeleteCV, useReanalyzeCV } from "@/hooks/use-cvs";
 import { useAnalysesByCV } from "@/hooks/use-analysis";
-import { useJobs } from "@/hooks/use-jobs";
-import { useAnalyzeCVWithJob } from "@/hooks/use-job-analysis";
 import { cn } from "@/lib/utils";
-import { CVInput } from "@/lib/ai/prompts";
-import { CVVersion } from "@prisma/client";
 import { AnalysisResult } from "@/app/types/analysis";
+import { CVVersion } from "@prisma/client";
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
-    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
     icon: CheckCircle2,
-    description: "High compatibility with job requirements",
   },
   consider: {
     label: "Moderate Fit",
-    color: "bg-amber-100 text-amber-800 border-amber-200",
+    color: "bg-amber-50 text-amber-700 border-amber-200",
     icon: Target,
-    description: "Some alignment, may need tailoring",
   },
   high_risk: {
     label: "Low Compatibility",
-    color: "bg-red-100 text-red-800 border-red-200",
+    color: "bg-red-50 text-red-700 border-red-200",
     icon: AlertCircle,
-    description: "Significant gaps in qualifications",
   },
 };
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  description: string;
-  icon: React.ElementType;
-  trend?: "up" | "down" | "neutral";
-  onClick?: () => void;
-}
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  trend,
-  onClick,
-}: StatCardProps) {
+function StatCard({ title, value, description, icon: Icon, trend }: any) {
   return (
-    <Card
-      className={cn(
-        "relative overflow-hidden transition-all duration-300",
-        onClick && "cursor-pointer hover:shadow-lg hover:scale-[1.02]",
-        "group",
-      )}
-      onClick={onClick}
-    >
+    <Card className="relative overflow-hidden group hover:shadow-md transition-shadow">
       <div
         className={cn(
-          "absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-110",
+          "absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10",
           trend === "up"
             ? "bg-emerald-500"
             : trend === "down"
@@ -125,99 +72,16 @@ function StatCard({
         )}
       />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div
-          className={cn(
-            "p-2 rounded-lg transition-colors",
-            trend === "up"
-              ? "bg-emerald-100 text-emerald-600"
-              : trend === "down"
-                ? "bg-red-100 text-red-600"
-                : "bg-blue-100 text-blue-600",
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </div>
+        <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {value}
-        </div>
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          {description}
-        </p>
+        <div className="text-3xl font-bold tracking-tight">{value}</div>
+        <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>
-  );
-}
-
-function ScoreRing({
-  score,
-  size = 120,
-  strokeWidth = 8,
-}: {
-  score: number;
-  size?: number;
-  strokeWidth?: number;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (score / 100) * circumference;
-
-  const color =
-    score >= 80
-      ? "text-emerald-500"
-      : score >= 60
-        ? "text-amber-500"
-        : "text-red-500";
-  const bgColor =
-    score >= 80
-      ? "text-emerald-100"
-      : score >= 60
-        ? "text-amber-100"
-        : "text-red-100";
-
-  return (
-    <div
-      className="relative inline-flex items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <svg className="transform -rotate-90 w-full h-full">
-        <circle
-          className={cn("transition-all duration-1000", bgColor)}
-          strokeWidth={strokeWidth}
-          stroke="currentColor"
-          fill="transparent"
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-        />
-        <circle
-          className={cn("transition-all duration-1000", color)}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          stroke="currentColor"
-          fill="transparent"
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <span
-          className={cn("text-2xl font-bold", color.replace("text-", "text-"))}
-        >
-          {score}%
-        </span>
-        <span className="text-[10px] text-muted-foreground uppercase">
-          Score
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -226,24 +90,20 @@ export default function CVDetailPage() {
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState<string>("");
-  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const { data, isLoading, error } = useCV(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByCV(
     id as string,
   );
   const deleteCV = useDeleteCV();
   const reanalyzeMutation = useReanalyzeCV();
-  const { data: jobsData, isLoading: jobsLoading } = useJobs({ limit: 100 });
-  const analyzeMutation = useAnalyzeCVWithJob();
 
   const cv = data?.cvVersion;
 
   const handleDelete = async () => {
     if (!cv) return;
     await deleteCV.mutateAsync(cv.id);
-    router.push("/my-account/cv");
+    router.push("/my-acccount/cv");
   };
 
   const handleReanalyze = () => {
@@ -254,7 +114,13 @@ export default function CVDetailPage() {
   if (error || !cv) return <CVNotFound />;
 
   const displayName =
-    cv.name || `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`;
+    cv.name ||
+    cv.originalFileUrl
+      ?.split("/")
+      .pop()
+      ?.replace(/\.(pdf|docx)$/, "") ||
+    `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`;
+
   const formatIssues = Array.isArray(cv.formatIssues) ? cv.formatIssues : [];
   const hasIssues = formatIssues.length > 0;
 
@@ -262,9 +128,6 @@ export default function CVDetailPage() {
   const contentScore = cv.atsContentScore || 0;
   const overallScore = Math.round((formatScore + contentScore) / 2);
 
-  const isOptimized = overallScore >= 80;
-  const needsWork = overallScore < 60;
-  const analysesCount = analyses?.analyses?.length ?? 0;
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 space-y-6 max-w-7xl">
       {/* Breadcrumb & Header */}
@@ -279,171 +142,131 @@ export default function CVDetailPage() {
           Back to Documents
         </Button>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-7xl space-y-6 sm:space-y-8">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/my-account/cv")}
-            className="gap-2 h-auto py-1 px-2 -ml-2 hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Documents
-          </Button>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-foreground font-medium truncate max-w-[200px] sm:max-w-md">
-            {displayName}
-          </span>
-        </nav>
-
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-start gap-3 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-semibold tracking-tight">
                 {displayName}
               </h1>
-              <Badge
-                variant={
-                  isOptimized
-                    ? "default"
-                    : needsWork
-                      ? "destructive"
-                      : "secondary"
-                }
-                className="mt-1"
-              >
-                {isOptimized
-                  ? "ATS Optimized"
-                  : needsWork
-                    ? "Needs Improvement"
-                    : "Good"}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                Uploaded{" "}
+              <Badge variant="outline" className="text-xs font-medium">
+                <Clock className="h-3 w-3 mr-1" />
                 {formatDistanceToNow(new Date(cv.createdAt), {
                   addSuffix: true,
                 })}
-              </span>
-              {cv.originalFileUrl && (
-                <span className="flex items-center gap-1.5">
-                  <Shield className="h-4 w-4 text-emerald-500" />
-                  Cloud Stored
-                </span>
-              )}
+              </Badge>
             </div>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              AI-analyzed and optimized for ATS compatibility
+            </p>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-3">
+            {cv.originalFileUrl && (
+              <Button variant="outline" size="sm" asChild className="gap-2">
+                <a
+                  href={cv.originalFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </a>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPreviewOpen(true)}
+              onClick={handleReanalyze}
+              disabled={reanalyzeMutation.isPending}
               className="gap-2"
             >
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Preview</span>
+              <RefreshCw
+                className={`h-4 w-4 ${reanalyzeMutation.isPending ? "animate-spin" : ""}`}
+              />
+              Re-analyze
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setEditModalOpen(true)}
-              className="gap-2"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="hidden sm:inline">Actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {cv.originalFileUrl && (
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={cv.originalFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download Original
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={handleReanalyze}
-                  disabled={reanalyzeMutation.isPending}
-                  className="gap-2"
-                >
-                  <RefreshCw
-                    className={cn(
-                      "h-4 w-4",
-                      reanalyzeMutation.isPending && "animate-spin",
-                    )}
-                  />
-                  Re-analyze
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    router.push(`/my-account/cv/${cv.id}/optimize`)
-                  }
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  Optimize with AI
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="gap-2 text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Document
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button
               onClick={() => router.push(`/my-account/cv/${cv.id}/optimize`)}
-              className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              className="gap-2"
             >
-              <Zap className="h-4 w-4" />
-              <span className="hidden sm:inline">Optimize</span>
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              Optimize CV
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Score Overview Card */}
-        <Card
-          className={cn(
-            "overflow-hidden border-0 shadow-lg",
-            isOptimized
-              ? "bg-gradient-to-br from-emerald-50 to-teal-50"
-              : needsWork
-                ? "bg-gradient-to-br from-red-50 to-orange-50"
-                : "bg-gradient-to-br from-amber-50 to-yellow-50",
-          )}
-        >
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8">
-              {/* Score Ring */}
-              <div className="flex-shrink-0">
-                <ScoreRing score={overallScore} size={140} />
+      {/* Readiness Score */}
+      <Card
+        className={cn(
+          "border-l-4",
+          overallScore >= 80
+            ? "border-l-emerald-500 bg-emerald-50/30"
+            : overallScore >= 60
+              ? "border-l-amber-500 bg-amber-50/30"
+              : "border-l-red-500 bg-red-50/30",
+        )}
+      >
+        <CardContent className="py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-lg">Application Readiness</h3>
+              <p className="text-sm text-muted-foreground">
+                {overallScore >= 80
+                  ? "Your CV is highly optimized and ready for executive applications"
+                  : overallScore >= 60
+                    ? "Good foundation with room for improvement in key areas"
+                    : "Significant optimization recommended before applying"}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div
+                  className={cn(
+                    "text-4xl font-bold",
+                    overallScore >= 80
+                      ? "text-emerald-600"
+                      : overallScore >= 60
+                        ? "text-amber-600"
+                        : "text-red-600",
+                  )}
+                >
+                  {overallScore}%
+                </div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                  Overall Score
+                </div>
               </div>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Format Compatibility
+              </span>
+              <span className="font-medium">{formatScore}%</span>
+            </div>
+            <Progress value={formatScore} className="h-2" />
+            <div className="flex justify-between text-sm mt-2">
+              <span className="text-muted-foreground">Content Strength</span>
+              <span className="font-medium">{contentScore}%</span>
+            </div>
+            <Progress value={contentScore} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
 
-              {/* Score Details */}
-              <div className="flex-1 w-full space-y-4">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -501,9 +324,9 @@ export default function CVDetailPage() {
           <TabsTrigger value="jobs" className="gap-2">
             <Briefcase className="h-4 w-4" />
             Job Matches
-            {analysesCount > 0 && (
+            {analyses?.analyses?.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">
-                {analysesCount}
+                {analyses.analyses.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -539,65 +362,14 @@ export default function CVDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">
-                    {isOptimized
-                      ? "Excellent ATS Compatibility"
-                      : needsWork
-                        ? "Requires Significant Improvement"
-                        : "Good Foundation with Room to Grow"}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {isOptimized
-                      ? "Your CV is highly optimized and ready for executive applications. Both format and content meet industry standards."
-                      : needsWork
-                        ? "Multiple issues detected that may prevent your CV from passing automated screening systems. Review recommendations below."
-                        : "Solid foundation with specific areas for enhancement. Addressing these will significantly improve your match rates."}
-                  </p>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5" />
+                    Format Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    ATS compatibility and structural review
+                  </CardDescription>
                 </div>
-
-                {/* Progress Bars */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium flex items-center gap-2">
-                        <Layout className="h-4 w-4" />
-                        Format & Structure
-                      </span>
-                      <span
-                        className={cn(
-                          "font-bold",
-                          formatScore >= 80
-                            ? "text-emerald-600"
-                            : formatScore >= 60
-                              ? "text-amber-600"
-                              : "text-red-600",
-                        )}
-                      >
-                        {formatScore}%
-                      </span>
-                    </div>
-                    <Progress value={formatScore} className="h-2.5" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Content & Keywords
-                      </span>
-                      <span
-                        className={cn(
-                          "font-bold",
-                          contentScore >= 80
-                            ? "text-emerald-600"
-                            : contentScore >= 60
-                              ? "text-amber-600"
-                              : "text-red-600",
-                        )}
-                      >
-                        {contentScore}%
-                      </span>
-                    </div>
-                    <Progress value={contentScore} className="h-2.5" />
                 {hasIssues && (
                   <Badge variant="destructive" className="gap-1">
                     <AlertCircle className="h-3 w-3" />
@@ -672,11 +444,25 @@ export default function CVDetailPage() {
                   <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
                     <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                   </div>
+                  <h3 className="font-semibold text-lg">No Issues Detected</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Your CV format is optimized for ATS parsing. The structure,
+                    fonts, and layout are all compatible with automated
+                    screening systems.
+                  </p>
                 </div>
-              </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="jobs" className="space-y-4">
+          {analysesLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
             </div>
-          </CardContent>
-        </Card>
           ) : analyses?.analyses?.length ? (
             <div className="space-y-3">
               {analyses.analyses.map((analysis: AnalysisResult) => {
@@ -686,160 +472,103 @@ export default function CVDetailPage() {
                   ] || verdictConfig.consider;
                 const VerdictIcon = verdict.icon;
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard
-            title="Format Score"
-            value={cv.atsFormatScore !== null ? `${cv.atsFormatScore}%` : "—"}
-            description="ATS parsing compatibility"
-            icon={Layout}
-            trend={
-              formatScore >= 80 ? "up" : formatScore >= 60 ? "neutral" : "down"
-            }
-          />
-          <StatCard
-            title="Content Score"
-            value={cv.atsContentScore !== null ? `${cv.atsContentScore}%` : "—"}
-            description="Keyword & impact analysis"
-            icon={TrendingUp}
-            trend={
-              contentScore >= 80
-                ? "up"
-                : contentScore >= 60
-                  ? "neutral"
-                  : "down"
-            }
-          />
-          <StatCard
-            title="Parsing Confidence"
-            value={
-              cv.parsingConfidence !== null ? `${cv.parsingConfidence}%` : "—"
-            }
-            description="Data extraction accuracy"
-            icon={FileSearch}
-          />
-          <StatCard
-            title="Job Matches"
-            value={String(analyses?.analyses?.length || 0)}
-            description="Positions analyzed"
-            icon={Briefcase}
-            onClick={() => setActiveTab("jobs")}
-          />
-        </div>
-
-        {/* Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-4"
-        >
-          <div className="overflow-x-auto -mx-3 px-3 pb-2">
-            <TabsList className="inline-flex w-auto min-w-full sm:w-full bg-muted/50 p-1">
-              <TabsTrigger
-                value="overview"
-                className="gap-2 text-xs sm:text-sm"
-              >
-                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Overview</span>
-                <span className="sm:hidden">Profile</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="format"
-                className="gap-2 text-xs sm:text-sm relative"
-              >
-                <Layout className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Format
-                {hasIssues && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background" />
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="jobs" className="gap-2 text-xs sm:text-sm">
-                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Matches
-                {analyses?.analyses?.length > 0 && (
-                  <span className="ml-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                    {analyses.analyses.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="recommendations"
-                className="gap-2 text-xs sm:text-sm"
-              >
-                <Award className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Recommendations</span>
-                <span className="sm:hidden">Tips</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="versions"
-                className="gap-2 text-xs sm:text-sm"
-              >
-                <GitBranch className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Versions
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="overview" className="space-y-4 mt-2">
+                return (
+                  <Card
+                    key={analysis.id}
+                    className="group hover:shadow-md transition-all cursor-pointer"
+                    onClick={() =>
+                      router.push(`/my-account/jobs/${analysis.jobId}`)
+                    }
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                            {analysis.job.title || "Untitled Position"}
+                          </h3>
+                          <p className="text-muted-foreground">
+                            {analysis.job.company || "Unknown Organization"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="secondary" className="font-medium">
+                              Match: {analysis.matchScore}%
+                            </Badge>
+                            <Badge className={cn("gap-1", verdict.color)}>
+                              <VerdictIcon className="h-3 w-3" />
+                              {verdict.label}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/my-account/jobs/${analysis.jobId}`);
+                          }}
+                        >
+                          View Job
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
             <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-amber-500" />
-                      Extracted Profile
-                    </CardTitle>
-                    <CardDescription>
-                      AI-structured data from your CV
-                    </CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <Edit3 className="h-4 w-4" />
-                    Edit
-                  </Button>
+              <CardContent className="py-12 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                  <Briefcase className="h-8 w-8 text-muted-foreground" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-slate-950 rounded-lg p-4 overflow-auto max-h-[500px]">
-                  <pre className="text-xs sm:text-sm font-mono text-slate-50 leading-relaxed">
-                    {JSON.stringify(cv.profile, null, 2)}
-                  </pre>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg">No Job Analyses Yet</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Navigate to a job posting and analyze this CV against it to
+                    see compatibility scores and tailored recommendations.
+                  </p>
                 </div>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/my-account/jobs")}
+                  className="gap-2"
+                >
+                  <Briefcase className="h-4 w-4" />
+                  Browse Jobs
+                </Button>
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
+        </TabsContent>
 
-          <TabsContent value="format" className="space-y-4 mt-2">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Layout className="h-5 w-5" />
-                      Format Analysis
-                    </CardTitle>
-                    <CardDescription>
-                      ATS compatibility and structure review
-                    </CardDescription>
-                  </div>
-                  {hasIssues ? (
-                    <Badge variant="destructive" className="w-fit gap-1.5">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {formatIssues.length} issue
-                      {formatIssues.length !== 1 ? "s" : ""} found
-                    </Badge>
-                  ) : (
-                    <Badge className="w-fit gap-1.5 bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      No issues detected
-                    </Badge>
-                  )}
+        <TabsContent value="versions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Version History</CardTitle>
+              <CardDescription>Parent and child CV versions</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {cv.parent && (
+                <div className="border-l-4 border-blue-500 pl-4 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    Parent version
+                  </p>
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-medium"
+                    onClick={() => router.push(`/cv/${cv.parent.id}`)}
+                  >
+                    View original CV
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Created{" "}
+                    {formatDistanceToNow(new Date(cv.parent.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {hasIssues ? (
-                  <div className="space-y-3">
-                    {formatIssues.map((issue, idx) => (
               )}
               {cv.children && cv.children.length > 0 && (
                 <div>
@@ -849,466 +578,48 @@ export default function CVDetailPage() {
                   <div className="space-y-2">
                     {cv.children.map((child: CVVersion) => (
                       <div
-                        key={idx}
-                        className={cn(
-                          "flex items-start gap-4 p-4 rounded-xl border-2 transition-all hover:shadow-md",
-                          issue.severity === "high"
-                            ? "bg-red-50/80 border-red-200"
-                            : issue.severity === "medium"
-                              ? "bg-amber-50/80 border-amber-200"
-                              : "bg-blue-50/80 border-blue-200",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                            issue.severity === "high"
-                              ? "bg-red-100 text-red-600"
-                              : issue.severity === "medium"
-                                ? "bg-amber-100 text-amber-600"
-                                : "bg-blue-100 text-blue-600",
-                          )}
-                        >
-                          <AlertCircle className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-sm">
-                              {issue.type}
-                            </h4>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-[10px] uppercase tracking-wide",
-                                issue.severity === "high"
-                                  ? "border-red-300 text-red-700 bg-red-50"
-                                  : issue.severity === "medium"
-                                    ? "border-amber-300 text-amber-700 bg-amber-50"
-                                    : "border-blue-300 text-blue-700 bg-blue-50",
-                              )}
-                            >
-                              {issue.severity}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {issue.message}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 space-y-4">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
-                      <CheckCircle2 className="h-10 w-10 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">Perfect Format</h3>
-                      <p className="text-muted-foreground max-w-md mx-auto mt-1">
-                        Your CV format is fully optimized for ATS parsing.
-                        Structure, fonts, and layout are all compatible.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ==================== JOB MATCHES TAB ==================== */}
-          <TabsContent value="jobs" className="space-y-4 mt-2">
-            {/* New Analysis Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  Analyze Against a Job
-                </CardTitle>
-                <CardDescription>
-                  Select a job posting to see how well your CV matches.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1">
-                    <Select
-                      value={selectedJobId}
-                      onValueChange={setSelectedJobId}
-                      disabled={analyzeMutation.isPending}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a job..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {jobsLoading ? (
-                          <SelectItem value="loading" disabled>
-                            Loading jobs...
-                          </SelectItem>
-                        ) : jobsData?.jobs?.length ? (
-                          jobsData.jobs.map((job: any) => (
-                            <SelectItem key={job.id} value={job.id}>
-                              {job.title} @ {job.company}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            No jobs found. Create one first.
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    onClick={async () => {
-                      if (!selectedJobId) return;
-                      await analyzeMutation.mutateAsync({
-                        cvId: cv.id,
-                        jobId: selectedJobId,
-                      });
-                      setSelectedJobId("");
-                    }}
-                    disabled={!selectedJobId || analyzeMutation.isPending}
-                    className="gap-2"
-                  >
-                    {analyzeMutation.isPending ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4" />
-                        Run Analysis
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Existing Analyses List */}
-            {analysesLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-28 w-full" />
-                ))}
-              </div>
-            ) : analyses?.analyses?.length ? (
-              <div className="grid gap-3">
-                {analyses.analyses.map((analysis) => {
-                  const verdict =
-                    verdictConfig[
-                      analysis.verdict as keyof typeof verdictConfig
-                    ] || verdictConfig.consider;
-                  const VerdictIcon = verdict.icon;
-                  return (
-                    <Card
-                      key={analysis.id}
-                      className="group cursor-pointer hover:shadow-lg transition-all border-l-4"
-                      style={{
-                        borderLeftColor:
-                          analysis.verdict === "proceed"
-                            ? "#10b981"
-                            : analysis.verdict === "high_risk"
-                              ? "#ef4444"
-                              : "#f59e0b",
-                      }}
-                      onClick={() =>
-                        router.push(`/my-account/jobs/${analysis.jobId}`)
-                      }
-                    >
-                      <CardContent className="p-4 sm:p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-1 flex-1">
-                            <h3 className="font-semibold text-base sm:text-lg group-hover:text-primary transition-colors">
-                              {analysis.job.title || "Untitled Position"}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {analysis.job.company || "Unknown Organization"}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-2 mt-2">
-                              <Badge
-                                variant="secondary"
-                                className="font-semibold"
-                              >
-                                {analysis.matchScore}% Match
-                              </Badge>
-                              <Badge className={cn("gap-1.5", verdict.color)}>
-                                <VerdictIcon className="h-3 w-3" />
-                                {verdict.label}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 hidden sm:block">
-                              {verdict.description}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2 self-start sm:self-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            View Analysis
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                    <Briefcase className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">No Analyses Yet</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto mt-1 text-sm">
-                      Use the form above to compare this CV against a job
-                      posting.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => router.push("/my-account/jobs")}
-                    className="gap-2"
-                  >
-                    <Briefcase className="h-4 w-4" />
-                    Browse Jobs
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="recommendations" className="space-y-4 mt-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-amber-500" />
-                  Optimization Recommendations
-                </CardTitle>
-                <CardDescription>
-                  AI-powered suggestions to improve your CV
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {formatIssues.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="font-semibold flex items-center gap-2 text-red-700">
-                      <AlertCircle className="h-5 w-5" />
-                      Priority Fixes
-                    </h3>
-                    <div className="space-y-2">
-                      {formatIssues.slice(0, 3).map((issue, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200"
-                        >
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-200 text-red-700 flex items-center justify-center text-xs font-bold">
-                            {idx + 1}
-                          </span>
-                          <div>
-                            <p className="font-medium text-sm text-red-900">
-                              {issue.type}
-                            </p>
-                            <p className="text-xs text-red-700 mt-0.5">
-                              {issue.message}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2 text-blue-700">
-                    <Sparkles className="h-5 w-5" />
-                    Content Enhancements
-                  </h3>
-                  <div className="grid gap-2">
-                    {cv.atsContentScore < 70 && (
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <TrendingUp className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm text-blue-900">
-                            Strengthen Achievements
-                          </p>
-                          <p className="text-xs text-blue-700 mt-0.5">
-                            Add quantifiable results and metrics to your
-                            experience bullet points.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {cv.keywordCoverage < 60 && (
-                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <Target className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-sm text-blue-900">
-                            Improve Keyword Coverage
-                          </p>
-                          <p className="text-xs text-blue-700 mt-0.5">
-                            Include more industry-specific terminology from your
-                            target job descriptions.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-                    <div>
-                      <h4 className="font-semibold text-amber-900">
-                        Ready for a professional rewrite?
-                      </h4>
-                      <p className="text-sm text-amber-800 mt-0.5">
-                        Our AI can optimize your CV for specific roles.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() =>
-                        router.push(`/my-account/cv/${cv.id}/optimize`)
-                      }
-                      className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white whitespace-nowrap"
-                    >
-                      <Zap className="h-4 w-4" />
-                      Optimize Now
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="versions" className="space-y-4 mt-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GitBranch className="h-5 w-5" />
-                  Version History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {cv.parent ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <GitBranch className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">Parent Version</p>
-                        <p className="text-xs text-muted-foreground">
-                          Created{" "}
-                          {formatDistanceToNow(new Date(cv.parent.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/my-account/cv/${cv.parent.id}`)
-                        }
-                      >
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                ) : cv.children && cv.children.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-3">
-                      {cv.children.length} optimized version
-                      {cv.children.length !== 1 ? "s" : ""}
-                    </p>
-                    {cv.children.map((child) => (
-                      <div
                         key={child.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        className="flex justify-between items-center border-b pb-2 last:border-0"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                            <Sparkles className="h-4 w-4 text-emerald-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              Optimized Version
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(child.createdAt), {
-                                addSuffix: true,
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className="text-xs capitalize"
-                          >
-                            {child.source}
-                          </Badge>
+                        <div>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="link"
+                            className="p-0 h-auto font-medium"
                             onClick={() =>
                               router.push(`/my-account/cv/${child.id}`)
                             }
                           >
-                            View
+                            View optimized CV
                           </Button>
+                          <p className="text-xs text-muted-foreground">
+                            Created{" "}
+                            {formatDistanceToNow(new Date(child.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </p>
                         </div>
+                        <Badge variant="outline" className="capitalize">
+                          {child.source}
+                        </Badge>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <GitBranch className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No version history available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </div>
+              )}
+              {!cv.parent && (!cv.children || cv.children.length === 0) && (
+                <p className="text-muted-foreground">
+                  No version history available.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-        <CVEditModal
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          cvId={cv.id}
-          initialData={cv.profile as CVInput}
-          cvName={displayName}
-          onRestructure={async () => {
-            const res = await fetch(`/api/cv/${cv.id}/restructure`, {
-              method: "POST",
-            });
-            if (!res.ok) throw new Error("Restructuring failed");
-            await refetch(); // Refresh the CV data
-          }}
-        />
-        <DeleteCVDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          cvName={displayName}
-          onConfirm={handleDelete}
-          isDeleting={deleteCV.isPending}
-        />
-
-        <CVPreviewModal
-          open={previewOpen}
-          onOpenChange={setPreviewOpen}
-          fileUrl={cv.originalFileUrl}
-          title={displayName}
-        />
-      </div>
       <DeleteCVDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        // cvName={displayName}
+        cvName={displayName}
         onConfirm={handleDelete}
         isDeleting={deleteCV.isPending}
       />
@@ -1318,53 +629,39 @@ export default function CVDetailPage() {
 
 function CVDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="container mx-auto py-8 px-6 max-w-7xl space-y-8">
+    <div className="container mx-auto py-6 px-4 sm:px-6 space-y-6 max-w-7xl">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-32" />
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-center">
           <div className="space-y-2">
             <Skeleton className="h-10 w-64" />
             <Skeleton className="h-4 w-48" />
           </div>
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-9 w-24" />
         </div>
-        <Skeleton className="h-40 w-full" />
-        <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
-          ))}
-        </div>
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-96 w-full" />
       </div>
+      <Skeleton className="h-32 w-full" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 w-full" />
+        ))}
+      </div>
+      <Skeleton className="h-12 w-80" />
+      <Skeleton className="h-96 w-full" />
     </div>
   );
 }
 
 function CVNotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
-      <div className="text-center max-w-md px-6">
-        <div className="w-24 h-24 mx-auto rounded-full bg-muted flex items-center justify-center mb-6">
-          <FileText className="h-12 w-12 text-muted-foreground" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
-        <p className="text-muted-foreground mb-6">
-          The CV you're looking for doesn't exist or you don't have permission
-          to access it.
-        </p>
-        <Button
-          onClick={() => (window.location.href = "/my-account/cv")}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Documents
-        </Button>
+    <div className="container mx-auto py-12 px-4 text-center max-w-md">
+      <div className="w-20 h-20 mx-auto rounded-full bg-muted flex items-center justify-center mb-6">
+        <FileText className="h-10 w-10 text-muted-foreground" />
       </div>
       <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
       <p className="text-muted-foreground mb-6">
-        The CV you`&apos;`re looking for doesn`&apos;`t exist or you
-        don`&apos;`t have permission to access it.
+        The CV you`&apos;`,re looking for doesn`&apos;`,t exist or you
+        don`&apos;`,t have permission to access it.
       </p>
       <Button onClick={() => (window.location.href = "/cv")} className="gap-2">
         <ArrowLeft className="h-4 w-4" />

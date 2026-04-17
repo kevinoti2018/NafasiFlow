@@ -11,16 +11,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Target,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +21,55 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
+
+// Types for AI output
+type CriticalGap = {
+  gap: string;
+  fix: string;
+  impact: "high" | "medium" | "low";
+};
+
+type CompetencyMapping = {
+  jobRequirement: string;
+  candidateEvidence: string;
+  relevance: "direct" | "transferable" | "implied";
+};
+
+type ExperienceTransformation = {
+  role: string;
+  originalBullets: string[];
+  optimizedBullets: string[];
+  injectedKeywords: string[];
+};
+
+type SellData = {
+  positioning?: {
+    angle: string;
+    rationale: string;
+    keyThemes: string[];
+  };
+  profileOptimization?: {
+    originalHeadline: string;
+    optimizedHeadline: string;
+    elevatorPitch: string;
+  };
+  experienceTransformations?: ExperienceTransformation[];
+  competencyMapping?: CompetencyMapping[];
+};
+
+type MatchData = {
+  matchScore?: number;
+  rationale?: string;
+  confidence?: number;
+  eligibility?: {
+    seniorityGap?: -1 | 0 | 1;
+    isRemoteCompatible?: boolean | null;
+  };
+  scoreBreakdown?: Record<string, number>;
+  criticalGaps?: CriticalGap[];
+  recommendations?: string[];
+  verdict?: "proceed" | "consider" | "high_risk";
+};
 
 const verdictConfig = {
   proceed: {
@@ -57,10 +98,11 @@ export default function AnalysisDetailPage() {
   if (error || !data?.analysis) return <AnalysisNotFound />;
 
   const analysis = data.analysis;
-  const matchData = analysis.analysis?.match || analysis.analysis;
-  const sellData = analysis.analysis?.sell;
+  const matchData = analysis.analysis?.match as MatchData | undefined;
+  const sellData = analysis.analysis?.sell as SellData | undefined;
+  const rawMatchData = matchData || (analysis.analysis as MatchData);
 
-  const verdict = matchData?.verdict || "consider";
+  const verdict = rawMatchData?.verdict || "consider";
   const verdictInfo =
     verdictConfig[verdict as keyof typeof verdictConfig] ||
     verdictConfig.consider;
@@ -118,7 +160,7 @@ export default function AnalysisDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {matchData?.confidence || 0}%
+              {rawMatchData?.confidence || 0}%
             </div>
             <p className="text-xs text-muted-foreground">
               AI confidence in score
@@ -132,9 +174,9 @@ export default function AnalysisDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {matchData?.eligibility?.seniorityGap === -1
+              {rawMatchData?.eligibility?.seniorityGap === -1
                 ? "Underqualified"
-                : matchData?.eligibility?.seniorityGap === 1
+                : rawMatchData?.eligibility?.seniorityGap === 1
                   ? "Overqualified"
                   : "Match"}
             </div>
@@ -149,9 +191,9 @@ export default function AnalysisDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {matchData?.eligibility?.isRemoteCompatible === true
+              {rawMatchData?.eligibility?.isRemoteCompatible === true
                 ? "Yes"
-                : matchData?.eligibility?.isRemoteCompatible === false
+                : rawMatchData?.eligibility?.isRemoteCompatible === false
                   ? "No"
                   : "Unknown"}
             </div>
@@ -160,27 +202,29 @@ export default function AnalysisDetailPage() {
       </div>
 
       {/* Score Breakdown */}
-      {matchData?.scoreBreakdown && (
+      {rawMatchData?.scoreBreakdown && (
         <Card>
           <CardHeader>
             <CardTitle>Score Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(matchData.scoreBreakdown).map(([key, value]) => (
-                <div key={key}>
-                  <div className="flex justify-between text-sm">
-                    <span className="capitalize">{key}</span>
-                    <span>{value as number}%</span>
+              {Object.entries(rawMatchData.scoreBreakdown).map(
+                ([key, value]) => (
+                  <div key={key}>
+                    <div className="flex justify-between text-sm">
+                      <span className="capitalize">{key}</span>
+                      <span>{value as number}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{ width: `${value}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full"
-                      style={{ width: `${value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </CardContent>
         </Card>
@@ -203,7 +247,7 @@ export default function AnalysisDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                {matchData?.rationale || "No rationale provided."}
+                {rawMatchData?.rationale || "No rationale provided."}
               </p>
             </CardContent>
           </Card>
@@ -212,17 +256,19 @@ export default function AnalysisDetailPage() {
               <CardTitle>Critical Gaps</CardTitle>
             </CardHeader>
             <CardContent>
-              {matchData?.criticalGaps?.length ? (
+              {rawMatchData?.criticalGaps?.length ? (
                 <ul className="space-y-2">
-                  {matchData.criticalGaps.map((gap: any, i: number) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="font-medium">• {gap.gap}:</span>
-                      <span className="text-muted-foreground">{gap.fix}</span>
-                      <Badge variant="outline" className="ml-auto">
-                        {gap.impact}
-                      </Badge>
-                    </li>
-                  ))}
+                  {rawMatchData.criticalGaps.map(
+                    (gap: CriticalGap, i: number) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="font-medium">• {gap.gap}:</span>
+                        <span className="text-muted-foreground">{gap.fix}</span>
+                        <Badge variant="outline" className="ml-auto">
+                          {gap.impact}
+                        </Badge>
+                      </li>
+                    ),
+                  )}
                 </ul>
               ) : (
                 <p className="text-muted-foreground">
@@ -236,13 +282,15 @@ export default function AnalysisDetailPage() {
               <CardTitle>Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
-              {matchData?.recommendations?.length ? (
+              {rawMatchData?.recommendations?.length ? (
                 <ul className="list-disc list-inside space-y-1">
-                  {matchData.recommendations.map((rec: string, i: number) => (
-                    <li key={i} className="text-muted-foreground">
-                      {rec}
-                    </li>
-                  ))}
+                  {rawMatchData.recommendations.map(
+                    (rec: string, i: number) => (
+                      <li key={i} className="text-muted-foreground">
+                        {rec}
+                      </li>
+                    ),
+                  )}
                 </ul>
               ) : (
                 <p className="text-muted-foreground">
@@ -302,7 +350,7 @@ export default function AnalysisDetailPage() {
               </CardContent>
             </Card>
             {sellData.experienceTransformations?.map(
-              (exp: any, idx: number) => (
+              (exp: ExperienceTransformation, idx: number) => (
                 <Card key={idx}>
                   <CardHeader>
                     <CardTitle>{exp.role}</CardTitle>
@@ -338,24 +386,32 @@ export default function AnalysisDetailPage() {
                 </Card>
               ),
             )}
-            {sellData.competencyMapping?.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Competency Mapping</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {sellData.competencyMapping.map((map: any, i: number) => (
-                    <div key={i} className="flex justify-between border-b pb-2">
-                      <span className="font-medium">{map.jobRequirement}</span>
-                      <span className="text-muted-foreground text-sm">
-                        {map.candidateEvidence}
-                      </span>
-                      <Badge variant="outline">{map.relevance}</Badge>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+            {sellData.competencyMapping &&
+              sellData.competencyMapping.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Competency Mapping</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {sellData.competencyMapping.map(
+                      (map: CompetencyMapping, i: number) => (
+                        <div
+                          key={i}
+                          className="flex justify-between border-b pb-2"
+                        >
+                          <span className="font-medium">
+                            {map.jobRequirement}
+                          </span>
+                          <span className="text-muted-foreground text-sm">
+                            {map.candidateEvidence}
+                          </span>
+                          <Badge variant="outline">{map.relevance}</Badge>
+                        </div>
+                      ),
+                    )}
+                  </CardContent>
+                </Card>
+              )}
           </TabsContent>
         )}
 
@@ -398,7 +454,8 @@ function AnalysisNotFound() {
     <div className="container mx-auto py-12 text-center">
       <h2 className="text-2xl font-bold">Analysis not found</h2>
       <p className="text-muted-foreground">
-        The analysis you're looking for doesn't exist or you don't have access.
+        The analysis you `&apos;`re looking for doesn `&apos;`t exist or you don
+        `&apos;`t have access.
       </p>
       <Button className="mt-4" onClick={() => router.push("/cv")}>
         Back to CVs

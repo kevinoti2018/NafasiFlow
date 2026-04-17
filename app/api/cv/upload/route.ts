@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const tempPath = path.join(tempDir, `${Date.now()}-${file.name}`);
   await writeFile(tempPath, buffer);
 
-  let warnings: string[] = [];
+  const warnings: string[] = [];
 
   try {
     const extractedText = await extractTextFromFile(tempPath);

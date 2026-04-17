@@ -4,15 +4,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { format } from "date-fns";
-import {
-  ArrowLeft,
-  Briefcase,
-  FileText,
-  Calendar,
-  Clock,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -22,7 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -39,7 +30,6 @@ import {
   useDeleteApplication,
 } from "@/hooks/use-application";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 const statusColors = {
   saved: "bg-gray-100 text-gray-800",
@@ -50,7 +40,11 @@ const statusColors = {
 };
 
 const statusOrder = ["saved", "applied", "interviewing", "offered", "rejected"];
-
+type TimelineEntry = {
+  id: string;
+  status: "saved" | "applied" | "interviewing" | "rejected" | "offered";
+  changedAt: string | Date;
+};
 export default function ApplicationDetailPage() {
   const { appId } = useParams();
   const router = useRouter();
@@ -171,7 +165,10 @@ export default function ApplicationDetailPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <Badge
-              className={cn("capitalize", statusColors[application.status])}
+              className={cn(
+                "capitalize",
+                statusColors[application.status as keyof typeof statusColors],
+              )}
             >
               {application.status}
             </Badge>
@@ -228,7 +225,7 @@ export default function ApplicationDetailPage() {
             <CardContent>
               {timeline?.timeline?.length ? (
                 <div className="space-y-4">
-                  {timeline.timeline.map((entry: any) => (
+                  {timeline.timeline.map((entry: TimelineEntry) => (
                     <div key={entry.id} className="flex items-center gap-4">
                       <div className="w-24 text-sm text-muted-foreground">
                         {format(new Date(entry.changedAt), "PPp")}

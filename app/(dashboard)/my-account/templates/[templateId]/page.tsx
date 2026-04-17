@@ -35,7 +35,29 @@ import {
   useDeleteTemplate,
 } from "@/hooks/use-templates";
 import { DeleteTemplateDialog } from "@/components/templates/delete-template-dialog";
-
+import { CVVersion } from "@prisma/client";
+// types/application.ts or at the top of the page
+type ApplicationWithJob = {
+  id: string;
+  userId: string;
+  jobId: string;
+  cvVersionId: string;
+  templateId: string | null;
+  matchScore: number | null;
+  analysisVersion: number | null;
+  status: "saved" | "applied" | "interviewing" | "rejected" | "offered";
+  appliedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // Related job (included via Prisma include)
+  job: {
+    id: string;
+    title: string | null;
+    company: string | null;
+    // add other job fields if needed (e.g., description, url)
+  } | null;
+  // Optionally, other relations like cvVersion, template, etc.
+};
 export default function TemplateDetailPage() {
   const { templateId } = useParams();
   const router = useRouter();
@@ -230,7 +252,7 @@ export default function TemplateDetailPage() {
                   Recent CVs using this template
                 </h3>
                 <ul className="space-y-2">
-                  {template.cvVersions.slice(0, 5).map((cv: any) => (
+                  {template.cvVersions.slice(0, 5).map((cv: CVVersion) => (
                     <li
                       key={cv.id}
                       className="flex justify-between items-center"
@@ -260,26 +282,28 @@ export default function TemplateDetailPage() {
                   Recent Applications using this template
                 </h3>
                 <ul className="space-y-2">
-                  {template.applications.slice(0, 5).map((app: any) => (
-                    <li
-                      key={app.id}
-                      className="flex justify-between items-center"
-                    >
-                      <span className="text-sm">
-                        {app.job?.title || "Untitled Job"} at{" "}
-                        {app.job?.company || "Unknown"}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/my-account/applications/${app.id}`)
-                        }
+                  {template.applications
+                    .slice(0, 5)
+                    .map((app: ApplicationWithJob) => (
+                      <li
+                        key={app.id}
+                        className="flex justify-between items-center"
                       >
-                        View
-                      </Button>
-                    </li>
-                  ))}
+                        <span className="text-sm">
+                          {app.job?.title || "Untitled Job"} at{" "}
+                          {app.job?.company || "Unknown"}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/my-account/applications/${app.id}`)
+                          }
+                        >
+                          View
+                        </Button>
+                      </li>
+                    ))}
                 </ul>
               </div>
             </>

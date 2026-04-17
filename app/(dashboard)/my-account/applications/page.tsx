@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Briefcase, FileText, Calendar, Filter, Search } from "lucide-react";
+import { Briefcase, Filter, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApplications } from "@/hooks/use-application";
+import { Application } from "@prisma/client";
 
 const statusColors = {
   saved: "bg-gray-100 text-gray-800",
@@ -40,7 +41,29 @@ const statusColors = {
   rejected: "bg-red-100 text-red-800",
   offered: "bg-green-100 text-green-800",
 };
+// types/application.ts or at the top of the page
+type ApplicationWithJob = {
+  id: string;
+  userId: string;
+  jobId: string;
+  cvVersionId: string;
+  templateId: string | null;
+  matchScore: number | null;
 
+  analysisVersion: number | null;
+  status: "saved" | "applied" | "interviewing" | "rejected" | "offered";
+  appliedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // Related job (included via Prisma include)
+  job: {
+    id: string;
+    title: string | null;
+    company: string | null;
+    // add other job fields if needed (e.g., description, url)
+  } | null;
+  // Optionally, other relations like cvVersion, template, etc.
+};
 export default function ApplicationsPage() {
   const router = useRouter();
   const [status, setStatus] = useState<string>("all");
@@ -58,7 +81,7 @@ export default function ApplicationsPage() {
   const pagination = data?.pagination;
 
   const filteredApps = applications.filter(
-    (app) =>
+    (app: ApplicationWithJob) =>
       app.job?.title?.toLowerCase().includes(search.toLowerCase()) ||
       app.job?.company?.toLowerCase().includes(search.toLowerCase()),
   );
@@ -135,7 +158,7 @@ export default function ApplicationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredApps.map((app) => (
+                  {filteredApps.map((app: ApplicationWithJob) => (
                     <TableRow
                       key={app.id}
                       className="cursor-pointer hover:bg-muted/50"

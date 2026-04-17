@@ -33,18 +33,23 @@ import {
 import { TemplateUploadModal } from "@/components/templates/template-upload-modal";
 import { DeleteTemplateDialog } from "@/components/templates/delete-template-dialog";
 import { useTemplates, useDeleteTemplate } from "@/hooks/use-templates";
-
+import { Template } from "@prisma/client";
+type TemplateWithCount = Template & {
+  _count?: { cvVersions: number; applications: number };
+};
 export default function TemplatesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [deletingTemplate, setDeletingTemplate] = useState<any>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<Template | null>(
+    null,
+  );
   const { data, isLoading } = useTemplates();
   const deleteTemplate = useDeleteTemplate();
 
   const templates = data?.templates || [];
 
-  const filteredTemplates = templates.filter((t: any) =>
+  const filteredTemplates = templates.filter((t: Template) =>
     t.name.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -99,7 +104,7 @@ export default function TemplatesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTemplates.map((template: any) => (
+              {filteredTemplates.map((template: Template) => (
                 <Card
                   key={template.id}
                   className="group hover:shadow-md transition-all cursor-pointer"
@@ -173,7 +178,10 @@ export default function TemplatesPage() {
                         {template.isDefault ? "Default" : "Custom"}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        Used by {template._count?.cvVersions || 0} CVs
+                        Used by{" "}
+                        {(template as TemplateWithCount)._count?.cvVersions ||
+                          0}{" "}
+                        CVs
                       </span>
                     </div>
                   </CardContent>
