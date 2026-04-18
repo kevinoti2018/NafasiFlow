@@ -68,7 +68,7 @@ export async function DELETE(
 
   const cv = await db.cVVersion.findFirst({
     where: { id: validatedParams.cvId, userId: session.id },
-    include: { applications: true },
+    include: { applications: true, children: true }, // ✅ include children
   });
 
   if (!cv) {
@@ -78,6 +78,17 @@ export async function DELETE(
   if (cv.applications.length > 0) {
     return NextResponse.json(
       { error: "Cannot delete CV with existing applications" },
+      { status: 400 },
+    );
+  }
+
+  // ✅ Prevent deletion if there are child versions (optimized CVs)
+  if (cv.children.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot delete CV that has optimized versions. Delete those first.",
+      },
       { status: 400 },
     );
   }

@@ -11,18 +11,54 @@ import {
   AlertCircle,
   CheckCircle2,
   Target,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Zap,
+  Award,
+  Building2,
+  MapPin,
+  Clock,
+  ChevronRight,
+  Lightbulb,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Download,
+  Share2,
+  RefreshCw,
+  BrainCircuit,
+  FileSearch,
+  BadgeCheck,
+  ArrowUpRight,
+  Quote,
+  Info,
+  Menu,
+  X,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAnalysis } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
-// Types for AI output
+// Types for AI output (already defined, keep as is)
 type CriticalGap = {
   gap: string;
   fix: string;
@@ -74,25 +110,124 @@ type MatchData = {
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
-    color: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
     icon: CheckCircle2,
+    gradient: "from-emerald-500 to-teal-600",
+    bgGradient:
+      "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
+    description: "Excellent alignment with job requirements",
   },
   consider: {
     label: "Moderate Fit",
-    color: "bg-amber-100 text-amber-800 border-amber-200",
+    color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     icon: Target,
+    gradient: "from-amber-500 to-orange-600",
+    bgGradient:
+      "from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
+    description: "Good potential with some gaps to address",
   },
   high_risk: {
     label: "Low Compatibility",
-    color: "bg-red-100 text-red-800 border-red-200",
+    color: "bg-red-500/10 text-red-600 border-red-500/20",
     icon: AlertCircle,
+    gradient: "from-red-500 to-rose-600",
+    bgGradient:
+      "from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30",
+    description: "Significant gaps in requirements",
   },
 };
+
+const impactConfig = {
+  high: { color: "text-red-600 bg-red-50 border-red-200", icon: AlertTriangle },
+  medium: {
+    color: "text-amber-600 bg-amber-50 border-amber-200",
+    icon: AlertCircle,
+  },
+  low: { color: "text-blue-600 bg-blue-50 border-blue-200", icon: Info },
+};
+
+const relevanceConfig = {
+  direct: {
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    label: "Direct Match",
+  },
+  transferable: {
+    color: "bg-blue-100 text-blue-700 border-blue-200",
+    label: "Transferable",
+  },
+  implied: {
+    color: "bg-slate-100 text-slate-700 border-slate-200",
+    label: "Implied",
+  },
+};
+
+// --- Add proper typing for MetricCard props ---
+interface MetricCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  subtext: string;
+  trend?: "up" | "down" | "neutral";
+  highlight?: "warning" | "success";
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  subtext,
+  trend,
+  highlight,
+}: MetricCardProps) {
+  const TrendIcon =
+    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+  const trendColor =
+    trend === "up"
+      ? "text-emerald-600"
+      : trend === "down"
+        ? "text-red-600"
+        : "text-slate-400";
+
+  return (
+    <Card className="relative overflow-hidden border-slate-200/60 dark:border-slate-800/60 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-3 sm:p-4 md:p-6">
+        <div className="flex items-start justify-between">
+          <div
+            className={cn(
+              "p-1.5 sm:p-2 rounded-lg",
+              highlight === "warning"
+                ? "bg-amber-100 text-amber-600"
+                : highlight === "success"
+                  ? "bg-emerald-100 text-emerald-600"
+                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+            )}
+          >
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+          </div>
+          {trend && (
+            <TrendIcon className={cn("h-3 w-3 sm:h-4 sm:w-4", trendColor)} />
+          )}
+        </div>
+        <div className="mt-2 sm:mt-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
+          <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5 sm:mt-1 truncate">
+            {value}
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+            {subtext}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AnalysisDetailPage() {
   const { analysisId } = useParams();
   const router = useRouter();
   const { data, isLoading, error } = useAnalysis(analysisId as string);
+  const [activeTab, setActiveTab] = useState("match");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (isLoading) return <AnalysisSkeleton />;
   if (error || !data?.analysis) return <AnalysisNotFound />;
@@ -108,342 +243,849 @@ export default function AnalysisDetailPage() {
     verdictConfig.consider;
   const VerdictIcon = verdictInfo.icon;
 
+  const matchScore = analysis.matchScore || 0;
+  const confidence = rawMatchData?.confidence || 0;
+
+  // Helper to safely get seniority gap value
+  const seniorityGap = rawMatchData?.eligibility?.seniorityGap;
+  const seniorityText =
+    seniorityGap === -1 ? "Junior" : seniorityGap === 1 ? "Senior" : "Match";
+
+  const isRemote = rawMatchData?.eligibility?.isRemoteCompatible;
+  const remoteText =
+    isRemote === true
+      ? "Compatible"
+      : isRemote === false
+        ? "On-site"
+        : "Unknown";
+
+  const gapsCount = rawMatchData?.criticalGaps?.length || 0;
+
   return (
-    <div className="container mx-auto py-6 px-4 sm:px-6 space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Analysis Details
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {analysis.cvVersion?.id && (
-              <>
-                CV:{" "}
-                <span className="font-medium">
-                  {analysis.cvVersion.id.slice(-8)}
+    <div className="min-h-screen bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950 dark:to-slate-900">
+      {/* Hero Section */}
+      <div
+        className={cn(
+          "relative overflow-hidden border-b",
+          `bg-gradient-to-br ${verdictInfo.bgGradient}`,
+        )}
+      >
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-white/20 to-transparent rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12 relative">
+          {/* Navigation */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 mb-4 sm:mb-6"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="gap-2 text-muted-foreground hover:text-foreground -ml-2 sm:ml-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+          </motion.div>
+
+          {/* Main Header */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="space-y-3 sm:space-y-4 flex-1 min-w-0"
+            >
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <Badge
+                  variant="outline"
+                  className="gap-1.5 px-2 sm:px-3 py-1 text-xs sm:text-sm"
+                >
+                  <BrainCircuit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="hidden sm:inline">AI Analysis</span>
+                  <span className="sm:hidden">AI</span>
+                </Badge>
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  {format(new Date(analysis.createdAt), "MMM d, yyyy")}
                 </span>
-              </>
-            )}
-            {analysis.job?.title && (
-              <>
-                {" "}
-                • Job: <span className="font-medium">{analysis.job.title}</span>
-              </>
-            )}
-          </p>
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 break-words">
+                  {analysis.job?.title || "Job Analysis"}
+                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-muted-foreground text-sm">
+                  {analysis.job?.company && (
+                    <span className="flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="truncate">{analysis.job.company}</span>
+                    </span>
+                  )}
+                  {/* ✅ ADD LINK TO CV */}
+                  {analysis.cvVersion?.id && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                      onClick={() =>
+                        router.push(`/my-account/cv/${analysis.cvVersion.id}`)
+                      }
+                    >
+                      <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      <span className="truncate">
+                        {analysis.cvVersion.name || "View CV"}
+                      </span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Score Circle */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-3 sm:gap-6 shrink-0"
+            >
+              <div className="relative">
+                <svg className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 transform -rotate-90">
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="45%"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    className="text-slate-200 dark:text-slate-800"
+                  />
+                  <circle
+                    cx="50%"
+                    cy="50%"
+                    r="45%"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    strokeDasharray={`${2 * Math.PI * 45}`}
+                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - matchScore / 100)}`}
+                    className={cn("transition-all duration-1000 ease-out")}
+                    style={{ stroke: `url(#gradient-${verdict})` }}
+                  />
+                  <defs>
+                    <linearGradient
+                      id={`gradient-${verdict}`}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="currentColor"
+                        className={cn(
+                          "text-",
+                          verdictInfo.gradient.split(" ")[1],
+                        )}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="currentColor"
+                        className={cn(
+                          "text-",
+                          verdictInfo.gradient.split(" ")[3],
+                        )}
+                      />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
+                    {matchScore}%
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider">
+                    Match
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1 sm:space-y-2">
+                <Badge
+                  className={cn(
+                    "gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium",
+                    verdictInfo.color,
+                  )}
+                >
+                  <VerdictIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{verdictInfo.label}</span>
+                  <span className="sm:hidden">
+                    {verdict === "proceed"
+                      ? "Strong"
+                      : verdict === "consider"
+                        ? "Moderate"
+                        : "Low"}
+                  </span>
+                </Badge>
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-[150px] sm:max-w-[200px] hidden sm:block">
+                  {verdictInfo.description}
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Match Score</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{analysis.matchScore}%</div>
-            <Badge className={cn("mt-2 gap-1", verdictInfo.color)}>
-              <VerdictIcon className="h-3 w-3" />
-              {verdictInfo.label}
-            </Badge>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confidence</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {rawMatchData?.confidence || 0}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              AI confidence in score
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Seniority Gap</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {rawMatchData?.eligibility?.seniorityGap === -1
-                ? "Underqualified"
-                : rawMatchData?.eligibility?.seniorityGap === 1
-                  ? "Overqualified"
-                  : "Match"}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Remote Compatible
-            </CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {rawMatchData?.eligibility?.isRemoteCompatible === true
-                ? "Yes"
-                : rawMatchData?.eligibility?.isRemoteCompatible === false
-                  ? "No"
-                  : "Unknown"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
+        {/* Key Metrics Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4"
+        >
+          <MetricCard
+            icon={BarChart3}
+            label="AI Confidence"
+            value={`${confidence}%`}
+            subtext="In analysis accuracy"
+            trend={
+              confidence > 80 ? "up" : confidence > 50 ? "neutral" : "down"
+            }
+          />
+          <MetricCard
+            icon={Briefcase}
+            label="Seniority"
+            value={seniorityText}
+            subtext="Level alignment"
+            trend={seniorityGap === 0 ? "up" : "neutral"}
+          />
+          <MetricCard
+            icon={MapPin}
+            label="Remote Work"
+            value={remoteText}
+            subtext="Work arrangement"
+          />
+          <MetricCard
+            icon={Zap}
+            label="Key Gaps"
+            value={gapsCount}
+            subtext="Areas to address"
+            highlight={gapsCount > 0 ? "warning" : "success"}
+          />
+        </motion.div>
 
-      {/* Score Breakdown */}
-      {rawMatchData?.scoreBreakdown && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Score Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(rawMatchData.scoreBreakdown).map(
-                ([key, value]) => (
-                  <div key={key}>
-                    <div className="flex justify-between text-sm">
-                      <span className="capitalize">{key}</span>
-                      <span>{value as number}%</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${value}%` }}
-                      />
-                    </div>
+        {/* Score Breakdown */}
+        {rawMatchData?.scoreBreakdown && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="overflow-hidden border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+              <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-900/50 px-4 sm:px-6 py-3 sm:py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                      Score Breakdown
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Detailed scoring across key dimensions
+                    </CardDescription>
                   </div>
-                ),
-              )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 md:p-6">
+                <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(rawMatchData.scoreBreakdown).map(
+                    ([key, value], idx) => (
+                      <motion.div
+                        key={key}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + idx * 0.1 }}
+                        className="space-y-2 sm:space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs sm:text-sm font-medium capitalize text-slate-700 dark:text-slate-300">
+                            {key.replace(/([A-Z])/g, " $1").trim()}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-xs sm:text-sm font-bold",
+                              value >= 80
+                                ? "text-emerald-600"
+                                : value >= 60
+                                  ? "text-amber-600"
+                                  : "text-red-600",
+                            )}
+                          >
+                            {value}%
+                          </span>
+                        </div>
+                        <Progress
+                          value={value}
+                          className={cn(
+                            "h-1.5 sm:h-2",
+                            value >= 80
+                              ? "bg-emerald-100 [&>div]:bg-emerald-500"
+                              : value >= 60
+                                ? "bg-amber-100 [&>div]:bg-amber-500"
+                                : "bg-red-100 [&>div]:bg-red-500",
+                          )}
+                        />
+                      </motion.div>
+                    ),
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Detailed Analysis Tabs (unchanged except for minor type fixes) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-4 sm:space-y-6"
+          >
+            {/* Mobile/Desktop tabs remain the same */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+              <div className="flex items-center justify-between sm:hidden">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  {activeTab === "match"
+                    ? "Match Analysis"
+                    : activeTab === "sell"
+                      ? "Optimization"
+                      : "Raw Data"}
+                </span>
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Menu className="h-4 w-4" />
+                      Tabs
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-auto">
+                    <div className="flex flex-col gap-2 p-4">
+                      <Button
+                        variant={activeTab === "match" ? "default" : "ghost"}
+                        className="justify-start gap-2"
+                        onClick={() => {
+                          setActiveTab("match");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <FileSearch className="h-4 w-4" />
+                        Match Analysis
+                      </Button>
+                      {sellData && (
+                        <Button
+                          variant={activeTab === "sell" ? "default" : "ghost"}
+                          className="justify-start gap-2"
+                          onClick={() => {
+                            setActiveTab("sell");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Optimization
+                        </Button>
+                      )}
+                      <Button
+                        variant={activeTab === "raw" ? "default" : "ghost"}
+                        className="justify-start gap-2"
+                        onClick={() => {
+                          setActiveTab("raw");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Raw Data
+                      </Button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              <TabsList className="hidden sm:flex bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-xl h-auto flex-wrap">
+                <TabsTrigger
+                  value="match"
+                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                >
+                  <FileSearch className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Match Analysis
+                </TabsTrigger>
+                {sellData && (
+                  <TabsTrigger
+                    value="sell"
+                    className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Optimization
+                  </TabsTrigger>
+                )}
+                <TabsTrigger
+                  value="raw"
+                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                >
+                  <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Raw Data
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                >
+                  <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                >
+                  <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Tabs for detailed AI output */}
-      <Tabs defaultValue="match" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="match">Match Analysis</TabsTrigger>
-          {sellData && (
-            <TabsTrigger value="sell">Sell Recommendations</TabsTrigger>
-          )}
-          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="match" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rationale</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {rawMatchData?.rationale || "No rationale provided."}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Critical Gaps</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {rawMatchData?.criticalGaps?.length ? (
-                <ul className="space-y-2">
-                  {rawMatchData.criticalGaps.map(
-                    (gap: CriticalGap, i: number) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="font-medium">• {gap.gap}:</span>
-                        <span className="text-muted-foreground">{gap.fix}</span>
-                        <Badge variant="outline" className="ml-auto">
-                          {gap.impact}
-                        </Badge>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground">
-                  No critical gaps identified.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {rawMatchData?.recommendations?.length ? (
-                <ul className="list-disc list-inside space-y-1">
-                  {rawMatchData.recommendations.map(
-                    (rec: string, i: number) => (
-                      <li key={i} className="text-muted-foreground">
-                        {rec}
-                      </li>
-                    ),
-                  )}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground">
-                  No specific recommendations.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {sellData && (
-          <TabsContent value="sell" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Positioning</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>
-                  <strong>Angle:</strong> {sellData.positioning?.angle}
-                </p>
-                <p className="mt-2 text-muted-foreground">
-                  {sellData.positioning?.rationale}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {sellData.positioning?.keyThemes?.map((theme: string) => (
-                    <Badge key={theme} variant="secondary">
-                      {theme}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Optimized Headline & Pitch</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <h4 className="font-semibold">Original</h4>
-                  <p className="text-muted-foreground">
-                    {sellData.profileOptimization?.originalHeadline}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Optimized</h4>
-                  <p className="text-primary font-medium">
-                    {sellData.profileOptimization?.optimizedHeadline}
-                  </p>
-                </div>
-                <Separator />
-                <div>
-                  <h4 className="font-semibold">Elevator Pitch</h4>
-                  <p className="text-muted-foreground">
-                    {sellData.profileOptimization?.elevatorPitch}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            {sellData.experienceTransformations?.map(
-              (exp: ExperienceTransformation, idx: number) => (
-                <Card key={idx}>
-                  <CardHeader>
-                    <CardTitle>{exp.role}</CardTitle>
+            <AnimatePresence mode="wait">
+              <TabsContent
+                value="match"
+                className="space-y-4 sm:space-y-6 mt-0"
+              >
+                {/* AI Rationale */}
+                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                  <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <BrainCircuit className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
+                      AI Assessment
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <h4 className="font-semibold">Original Bullets</h4>
-                      <ul className="list-disc list-inside text-muted-foreground">
-                        {exp.originalBullets?.map((b: string, i: number) => (
-                          <li key={i}>{b}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">Optimized Bullets</h4>
-                      <ul className="list-disc list-inside text-primary">
-                        {exp.optimizedBullets?.map((b: string, i: number) => (
-                          <li key={i}>{b}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      <span className="text-sm text-muted-foreground">
-                        Injected keywords:
-                      </span>
-                      {exp.injectedKeywords?.map((kw: string) => (
-                        <Badge key={kw} variant="outline">
-                          {kw}
-                        </Badge>
-                      ))}
+                  <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-800">
+                      <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 mb-2" />
+                      <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {rawMatchData?.rationale ||
+                          "No rationale provided by the AI."}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-              ),
-            )}
-            {sellData.competencyMapping &&
-              sellData.competencyMapping.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Competency Mapping</CardTitle>
+
+                {/* Critical Gaps */}
+                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                  <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                      Critical Gaps & Recommendations
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Issues identified and how to address them
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    {sellData.competencyMapping.map(
-                      (map: CompetencyMapping, i: number) => (
-                        <div
-                          key={i}
-                          className="flex justify-between border-b pb-2"
-                        >
-                          <span className="font-medium">
-                            {map.jobRequirement}
-                          </span>
-                          <span className="text-muted-foreground text-sm">
-                            {map.candidateEvidence}
-                          </span>
-                          <Badge variant="outline">{map.relevance}</Badge>
+                  <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                    {rawMatchData?.criticalGaps?.length ? (
+                      <div className="space-y-3 sm:space-y-4">
+                        {rawMatchData.criticalGaps.map(
+                          (gap: CriticalGap, i: number) => {
+                            const impact = impactConfig[gap.impact];
+                            const ImpactIcon = impact.icon;
+                            return (
+                              <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors"
+                              >
+                                <div
+                                  className={cn(
+                                    "shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center",
+                                    impact.color,
+                                  )}
+                                >
+                                  <ImpactIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+                                    <h4 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                                      {gap.gap}
+                                    </h4>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "shrink-0 text-xs w-fit",
+                                        impact.color,
+                                      )}
+                                    >
+                                      {gap.impact} impact
+                                    </Badge>
+                                  </div>
+                                  <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                      Fix:{" "}
+                                    </span>
+                                    {gap.fix}
+                                  </p>
+                                </div>
+                              </motion.div>
+                            );
+                          },
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3 sm:mb-4">
+                          <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
                         </div>
-                      ),
+                        <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
+                          No Critical Gaps
+                        </h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mt-1 px-4">
+                          Great job! The AI didn't identify any major gaps in
+                          your profile for this role.
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
-              )}
-          </TabsContent>
-        )}
 
-        <TabsContent value="raw" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Complete AI Output (JSON)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] w-full rounded-md border p-4">
-                <pre className="text-xs font-mono">
-                  {JSON.stringify(analysis.analysis, null, 2)}
-                </pre>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                {/* Recommendations */}
+                {rawMatchData?.recommendations &&
+                  rawMatchData.recommendations.length > 0 && (
+                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                      <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                          <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                          Strategic Recommendations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                        <ul className="space-y-2 sm:space-y-3">
+                          {rawMatchData.recommendations.map(
+                            (rec: string, i: number) => (
+                              <motion.li
+                                key={i}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="flex gap-2 sm:gap-3 items-start"
+                              >
+                                <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center text-xs font-bold">
+                                  {i + 1}
+                                </span>
+                                <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 pt-0.5">
+                                  {rec}
+                                </span>
+                              </motion.li>
+                            ),
+                          )}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+              </TabsContent>
+
+              {sellData && (
+                <TabsContent
+                  value="sell"
+                  className="space-y-4 sm:space-y-6 mt-0"
+                >
+                  {/* Positioning Strategy */}
+                  {sellData.positioning && (
+                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-1.5 sm:h-2 bg-gradient-to-r",
+                          verdictInfo.gradient,
+                        )}
+                      />
+                      <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                          <Target className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
+                          Positioning Strategy
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                            Angle
+                          </h4>
+                          <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
+                            {sellData.positioning.angle}
+                          </p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                            Rationale
+                          </h4>
+                          <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {sellData.positioning.rationale}
+                          </p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                            Key Themes
+                          </h4>
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                            {sellData.positioning.keyThemes?.map(
+                              (theme: string) => (
+                                <Badge
+                                  key={theme}
+                                  className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200"
+                                >
+                                  {theme}
+                                </Badge>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Profile Optimization */}
+                  {sellData.profileOptimization && (
+                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                      <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                          Profile Optimization
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                          <div className="space-y-2">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                              Original Headline
+                            </h4>
+                            <div className="p-3 sm:p-4 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 line-through decoration-slate-400 text-sm sm:text-base">
+                              {sellData.profileOptimization.originalHeadline}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                              Optimized Headline
+                            </h4>
+                            <div className="p-3 sm:p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 font-medium text-sm sm:text-base">
+                              {sellData.profileOptimization.optimizedHeadline}
+                            </div>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 sm:mb-3">
+                            Elevator Pitch
+                          </h4>
+                          <div className="p-3 sm:p-4 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
+                            <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 mb-2" />
+                            <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 italic leading-relaxed">
+                              "{sellData.profileOptimization.elevatorPitch}"
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Experience Transformations */}
+                  {sellData.experienceTransformations?.map(
+                    (exp: ExperienceTransformation, idx: number) => (
+                      <Card
+                        key={idx}
+                        className="border-slate-200/60 dark:border-slate-800/60 shadow-sm"
+                      >
+                        <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                          <CardTitle className="text-base sm:text-lg">
+                            {exp.role}
+                          </CardTitle>
+                          <CardDescription className="text-xs sm:text-sm">
+                            Experience optimization with keyword injection
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6 space-y-4 sm:space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                            <div className="space-y-2 sm:space-y-3">
+                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
+                                Original
+                              </h4>
+                              <ul className="space-y-1.5 sm:space-y-2">
+                                {exp.originalBullets?.map(
+                                  (b: string, i: number) => (
+                                    <li
+                                      key={i}
+                                      className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-through decoration-slate-400/50 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-slate-400"
+                                    >
+                                      {b}
+                                    </li>
+                                  ),
+                                )}
+                              </ul>
+                            </div>
+                            <div className="space-y-2 sm:space-y-3">
+                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+                                Optimized
+                              </h4>
+                              <ul className="space-y-1.5 sm:space-y-2">
+                                {exp.optimizedBullets?.map(
+                                  (b: string, i: number) => (
+                                    <li
+                                      key={i}
+                                      className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-emerald-500 font-medium"
+                                    >
+                                      {b}
+                                    </li>
+                                  ),
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+                          {exp.injectedKeywords?.length > 0 && (
+                            <>
+                              <Separator />
+                              <div>
+                                <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                  Injected Keywords
+                                </h4>
+                                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                                  {exp.injectedKeywords.map((kw: string) => (
+                                    <Badge
+                                      key={kw}
+                                      variant="outline"
+                                      className="gap-1 border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-xs"
+                                    >
+                                      <ArrowUpRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                      {kw}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ),
+                  )}
+
+                  {/* Competency Mapping */}
+                  {sellData.competencyMapping &&
+                    sellData.competencyMapping.length > 0 && (
+                      <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                        <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                            <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                            Competency Mapping
+                          </CardTitle>
+                          <CardDescription className="text-xs sm:text-sm">
+                            How your skills align with job requirements
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                          <div className="space-y-2 sm:space-y-3">
+                            {sellData.competencyMapping.map(
+                              (map: CompetencyMapping, i: number) => {
+                                const relevance =
+                                  relevanceConfig[map.relevance];
+                                return (
+                                  <div
+                                    key={i}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors gap-2 sm:gap-4"
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-medium text-sm sm:text-base text-slate-900 dark:text-slate-100">
+                                        {map.jobRequirement}
+                                      </p>
+                                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                                        {map.candidateEvidence}
+                                      </p>
+                                    </div>
+                                    <Badge
+                                      className={cn(
+                                        "shrink-0 w-fit text-xs",
+                                        relevance.color,
+                                      )}
+                                    >
+                                      {relevance.label}
+                                    </Badge>
+                                  </div>
+                                );
+                              },
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                </TabsContent>
+              )}
+
+              <TabsContent value="raw" className="mt-0">
+                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+                    <div>
+                      <CardTitle className="text-base sm:text-lg">
+                        Raw Analysis Data
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Complete JSON output from AI analysis
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs sm:text-sm h-8"
+                    >
+                      <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Copy JSON</span>
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                    <ScrollArea className="h-[400px] sm:h-[500px] md:h-[600px] w-full rounded-lg border bg-slate-950">
+                      <pre className="p-3 sm:p-4 text-[10px] sm:text-xs font-mono text-slate-300 leading-relaxed">
+                        {JSON.stringify(analysis.analysis, null, 2)}
+                      </pre>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </AnimatePresence>
+          </Tabs>
+        </motion.div>
+      </div>
     </div>
   );
 }
 
 function AnalysisSkeleton() {
   return (
-    <div className="container mx-auto py-6 px-4 space-y-6">
-      <Skeleton className="h-8 w-48" />
-      <div className="grid grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-28 w-full" />
-        ))}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="h-48 sm:h-64 bg-slate-200 dark:bg-slate-800 animate-pulse" />
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 sm:h-32 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-48 sm:h-64 w-full" />
+        <Skeleton className="h-64 sm:h-96 w-full" />
       </div>
-      <Skeleton className="h-64 w-full" />
     </div>
   );
 }
@@ -451,15 +1093,26 @@ function AnalysisSkeleton() {
 function AnalysisNotFound() {
   const router = useRouter();
   return (
-    <div className="container mx-auto py-12 text-center">
-      <h2 className="text-2xl font-bold">Analysis not found</h2>
-      <p className="text-muted-foreground">
-        The analysis you `&apos;`re looking for doesn `&apos;`t exist or you don
-        `&apos;`t have access.
-      </p>
-      <Button className="mt-4" onClick={() => router.push("/cv")}>
-        Back to CVs
-      </Button>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+      <div className="text-center max-w-md mx-auto">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+          <FileSearch className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+        </div>
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Analysis Not Found
+        </h2>
+        <p className="text-sm text-muted-foreground mt-2">
+          The analysis you're looking for doesn't exist or you don't have access
+          to it.
+        </p>
+        <Button
+          className="mt-4 sm:mt-6 gap-2"
+          onClick={() => router.push("/cv")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to CVs
+        </Button>
+      </div>
     </div>
   );
 }

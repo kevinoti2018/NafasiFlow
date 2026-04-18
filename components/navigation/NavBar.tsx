@@ -49,7 +49,7 @@ export default function Navbar() {
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />
           ) : isAuthenticated ? (
-            <Link href="/dashboard">
+            <Link href="/my-account">
               <Button className="h-9 gap-2 rounded-full px-5 text-[10px] font-black tracking-widest uppercase shadow-lg active:scale-95">
                 <LayoutDashboard size={14} />
                 <span>My Tracker</span>

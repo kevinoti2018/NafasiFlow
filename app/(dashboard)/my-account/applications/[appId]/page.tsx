@@ -30,7 +30,7 @@ import {
   useDeleteApplication,
 } from "@/hooks/use-application";
 import { cn } from "@/lib/utils";
-
+import { DeleteApplicationDialog } from "@/components/applications/delete-application-dialog";
 const statusColors = {
   saved: "bg-gray-100 text-gray-800",
   applied: "bg-blue-100 text-blue-800",
@@ -49,7 +49,7 @@ export default function ApplicationDetailPage() {
   const { appId } = useParams();
   const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<string>("");
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { data, isLoading } = useApplication(appId as string);
   const { data: timeline } = useApplicationTimeline(appId as string);
   const updateMutation = useUpdateApplication();
@@ -68,12 +68,9 @@ export default function ApplicationDetailPage() {
 
   const handleDelete = async () => {
     if (!application) return;
-    if (confirm("Are you sure you want to delete this application?")) {
-      await deleteMutation.mutateAsync(application.id);
-      router.push("/my-account/applications");
-    }
+    await deleteMutation.mutateAsync(application.id);
+    router.push("/my-account/applications");
   };
-
   if (isLoading) return <DetailSkeleton />;
   if (!application) return <NotFound />;
 
@@ -184,7 +181,11 @@ export default function ApplicationDetailPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
@@ -245,6 +246,14 @@ export default function ApplicationDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <DeleteApplicationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        applicationTitle={`${job?.title} at ${job?.company}`}
+        onConfirm={handleDelete}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }

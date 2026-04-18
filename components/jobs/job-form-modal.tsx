@@ -1,4 +1,3 @@
-// components/jobs/job-form-modal.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -76,7 +75,6 @@ export function JobFormModal({
 
   const handleCancel = () => {
     if (isDirty && !isSubmitting) {
-      // Optional: Add confirmation dialog for unsaved changes
       const confirmed = window.confirm(
         "You have unsaved changes. Discard them?",
       );
@@ -90,9 +88,9 @@ export function JobFormModal({
 
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
-      <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden gap-0">
-        {/* Header Section */}
-        <div className="bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent px-6 py-6 border-b border-border/50">
+      <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden gap-0 flex flex-col max-h-[90vh]">
+        {/* Header Section - Fixed */}
+        <div className="shrink-0 bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent px-6 py-6 border-b border-border/50">
           <DialogHeader className="space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -128,11 +126,11 @@ export function JobFormModal({
           </DialogHeader>
         </div>
 
-        {/* Form Content */}
+        {/* Form Content - Scrollable */}
         <form
           id="job-form"
           onSubmit={form.handleSubmit(handleSubmit)}
-          className="px-6 py-6 space-y-5"
+          className="flex-1 overflow-y-auto px-6 py-6 space-y-5"
         >
           {/* Job Title Field */}
           <Controller
@@ -253,8 +251,8 @@ export function JobFormModal({
           />
         </form>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex justify-between items-center">
+        {/* Footer Actions - Fixed */}
+        <div className="shrink-0 px-6 py-4 bg-muted/30 border-t border-border/50 flex justify-between items-center">
           <div className="text-xs text-muted-foreground">
             {isDirty ? (
               <span className="flex items-center gap-1.5 text-amber-600">

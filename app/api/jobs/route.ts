@@ -28,10 +28,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { page, limit, status } = query;
+  const { page, limit, status, jobStatus } = query;
   const skip = (page - 1) * limit;
   const where: any = { userId: session.id };
   if (status) where.analysisStatus = status;
+  if (jobStatus) where.jobStatus = jobStatus;
 
   const [jobs, totalCount] = await Promise.all([
     db.job.findMany({

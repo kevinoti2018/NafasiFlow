@@ -138,11 +138,11 @@ export async function PATCH(
     );
   }
 
-  const { title, company } = body;
+  const { title, company, jobStatus } = body;
   const updateData: any = {};
   if (title !== undefined) updateData.title = title;
   if (company !== undefined) updateData.company = company;
-
+  if (jobStatus !== undefined) updateData.jobStatus = jobStatus;
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(
       { error: "No valid fields to update" },

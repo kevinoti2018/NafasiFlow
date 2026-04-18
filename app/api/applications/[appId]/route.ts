@@ -117,7 +117,6 @@ export async function PATCH(
 
   return NextResponse.json({ application });
 }
-
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ appId: string }> },
@@ -156,12 +155,12 @@ export async function DELETE(
     );
   }
 
-  // Remove link from CVJobAnalysis
-  await db.cVJobAnalysis.updateMany({
+  // Delete the associated CVJobAnalysis records (if any)
+  await db.cVJobAnalysis.deleteMany({
     where: { applicationId: validatedParams.appId },
-    data: { applicationId: null },
   });
 
+  // Delete the application
   await db.application.delete({ where: { id: validatedParams.appId } });
   return NextResponse.json({ success: true });
 }

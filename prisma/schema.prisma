@@ -167,8 +167,8 @@ model Template {
   name    String
   fileUrl String
 
-  metadata Json? // mapping / layout hints
-
+  metadata  Json? // mapping / layout hints
+  isSystem  Boolean      @default(false)
   type      TemplateType
   isDefault Boolean      @default(false)
 
@@ -198,12 +198,12 @@ model Job {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // User input
-  title      String? // optional, can be extracted by AI
-  company    String? // optional
-  rawContent String // original pasted JD text
-
+  title       String? // optional, can be extracted by AI
+  company     String? // optional
+  rawContent  String // original pasted JD text
+  jobStatus   JobStatus @default(open)
   // Deduplication (across all users)
-  contentHash String @unique // normalized SHA256
+  contentHash String    @unique // normalized SHA256
 
   // AI analysis
   structuredData  Json? // output from jdPrompt
@@ -226,6 +226,12 @@ model Job {
   @@index([userId, createdAt])
   @@index([analysisStatus])
   @@index([normalizedTitle])
+}
+
+enum JobStatus {
+  open
+  closed
+  archived
 }
 
 enum AnalysisStatus {
