@@ -50,7 +50,7 @@ export default function CVOptimizePage() {
       jobId: optimizationType === "job" ? selectedJobId : undefined,
       type: optimizationType,
     });
-    router.push(`/cv/${cv.id}`); // redirect back to CV detail page
+    router.push(`/my-account/cv/${cv.id}`); // redirect back to CV detail page
   };
 
   if (cvLoading) {

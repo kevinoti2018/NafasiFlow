@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       include: {
         job: { select: { id: true, title: true, company: true } },
         cvVersion: { select: { id: true, name: true, source: true } },
-        application: { select: { id: true, status: true } },
+        // application: { select: { id: true, status: true } },
       },
     }),
     db.cVJobAnalysis.count({ where }),

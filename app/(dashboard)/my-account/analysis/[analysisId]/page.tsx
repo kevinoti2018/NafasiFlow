@@ -58,7 +58,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-// Types for AI output (already defined, keep as is)
+// Types for AI output
 type CriticalGap = {
   gap: string;
   fix: string;
@@ -107,19 +107,22 @@ type MatchData = {
   verdict?: "proceed" | "consider" | "high_risk";
 };
 
+// Unified verdict configuration using consistent teal theme
 const verdictConfig = {
   proceed: {
     label: "Strong Match",
-    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     icon: CheckCircle2,
-    gradient: "from-emerald-500 to-teal-600",
+    gradient: "from-[#005f78] to-[#007a99]",
     bgGradient:
-      "from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30",
+      "from-[#005f78]/10 to-[#007a99]/10 dark:from-[#005f78]/20 dark:to-[#007a99]/20",
     description: "Excellent alignment with job requirements",
   },
   consider: {
     label: "Moderate Fit",
-    color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    color:
+      "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-500 dark:border-amber-500/30",
     icon: Target,
     gradient: "from-amber-500 to-orange-600",
     bgGradient:
@@ -128,47 +131,74 @@ const verdictConfig = {
   },
   high_risk: {
     label: "Low Compatibility",
-    color: "bg-red-500/10 text-red-600 border-red-500/20",
+    color:
+      "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30",
     icon: AlertCircle,
-    gradient: "from-red-500 to-rose-600",
+    gradient: "from-rose-500 to-rose-600",
     bgGradient:
-      "from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/30",
+      "from-rose-50 to-rose-50 dark:from-rose-950/30 dark:to-rose-950/30",
     description: "Significant gaps in requirements",
   },
 };
 
+// Unified impact configuration
 const impactConfig = {
-  high: { color: "text-red-600 bg-red-50 border-red-200", icon: AlertTriangle },
+  high: {
+    color:
+      "text-rose-700 bg-rose-100 border-rose-200 dark:text-rose-400 dark:bg-rose-950/30 dark:border-rose-800",
+    icon: AlertTriangle,
+  },
   medium: {
-    color: "text-amber-600 bg-amber-50 border-amber-200",
+    color:
+      "text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-400 dark:bg-amber-950/30 dark:border-amber-800",
     icon: AlertCircle,
   },
-  low: { color: "text-blue-600 bg-blue-50 border-blue-200", icon: Info },
+  low: {
+    color:
+      "text-[#005f78] bg-[#005f78]/10 border-[#005f78]/20 dark:text-[#4db8d4] dark:bg-[#005f78]/20 dark:border-[#005f78]/30",
+    icon: Info,
+  },
 };
 
+// Unified relevance configuration
 const relevanceConfig = {
   direct: {
-    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     label: "Direct Match",
   },
   transferable: {
-    color: "bg-blue-100 text-blue-700 border-blue-200",
+    color:
+      "bg-[#005f78]/5 text-[#005f78]/80 border-[#005f78]/10 dark:bg-[#005f78]/10 dark:text-[#4db8d4]/80 dark:border-[#005f78]/20",
     label: "Transferable",
   },
   implied: {
-    color: "bg-slate-100 text-slate-700 border-slate-200",
+    color:
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
     label: "Implied",
   },
 };
 
-// --- Add proper typing for MetricCard props ---
+// Unified score color scale
+const getScoreColor = (score: number) => {
+  if (score >= 80) return "text-[#005f78] dark:text-[#4db8d4]";
+  if (score >= 60) return "text-amber-600 dark:text-amber-400";
+  return "text-rose-600 dark:text-rose-400";
+};
+
+const getScoreBg = (score: number) => {
+  if (score >= 80) return "bg-[#005f78]";
+  if (score >= 60) return "bg-amber-500";
+  return "bg-rose-500";
+};
+
 interface MetricCardProps {
   icon: React.ElementType;
   label: string;
   value: string | number;
   subtext: string;
   trend?: "up" | "down" | "neutral";
-  highlight?: "warning" | "success";
+  highlight?: "warning" | "success" | "primary";
 }
 
 function MetricCard({
@@ -183,23 +213,25 @@ function MetricCard({
     trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
   const trendColor =
     trend === "up"
-      ? "text-emerald-600"
+      ? "text-[#005f78] dark:text-[#4db8d4]"
       : trend === "down"
-        ? "text-red-600"
+        ? "text-rose-600 dark:text-rose-400"
         : "text-slate-400";
 
   return (
-    <Card className="relative overflow-hidden border-slate-200/60 dark:border-slate-800/60 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="relative overflow-hidden border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-[#1c2225]">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="flex items-start justify-between">
           <div
             className={cn(
               "p-1.5 sm:p-2 rounded-lg",
               highlight === "warning"
-                ? "bg-amber-100 text-amber-600"
+                ? "bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
                 : highlight === "success"
-                  ? "bg-emerald-100 text-emerald-600"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+                  ? "bg-[#005f78]/10 text-[#005f78] dark:bg-[#005f78]/20 dark:text-[#4db8d4]"
+                  : highlight === "primary"
+                    ? "bg-[#005f78]/10 text-[#005f78] dark:bg-[#005f78]/20 dark:text-[#4db8d4]"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
             )}
           >
             <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -209,11 +241,13 @@ function MetricCard({
           )}
         </div>
         <div className="mt-2 sm:mt-4">
-          <p className="text-xs sm:text-sm text-muted-foreground">{label}</p>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            {label}
+          </p>
           <p className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5 sm:mt-1 truncate">
             {value}
           </p>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-500 mt-0.5 sm:mt-1">
             {subtext}
           </p>
         </div>
@@ -246,7 +280,6 @@ export default function AnalysisDetailPage() {
   const matchScore = analysis.matchScore || 0;
   const confidence = rawMatchData?.confidence || 0;
 
-  // Helper to safely get seniority gap value
   const seniorityGap = rawMatchData?.eligibility?.seniorityGap;
   const seniorityText =
     seniorityGap === -1 ? "Junior" : seniorityGap === 1 ? "Senior" : "Match";
@@ -262,11 +295,11 @@ export default function AnalysisDetailPage() {
   const gapsCount = rawMatchData?.criticalGaps?.length || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950 dark:to-slate-900">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
+      {/* Hero Section - Clean, unified gradient */}
       <div
         className={cn(
-          "relative overflow-hidden border-b",
+          "relative overflow-hidden border-b border-slate-200 dark:border-slate-800",
           `bg-gradient-to-br ${verdictInfo.bgGradient}`,
         )}
       >
@@ -286,11 +319,10 @@ export default function AnalysisDetailPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.back()}
-              className="gap-2 text-muted-foreground hover:text-foreground -ml-2 sm:ml-0"
+              className="gap-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 -ml-2 sm:ml-0 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back</span>
-              <span className="sm:hidden">Back</span>
             </Button>
           </motion.div>
 
@@ -305,13 +337,13 @@ export default function AnalysisDetailPage() {
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <Badge
                   variant="outline"
-                  className="gap-1.5 px-2 sm:px-3 py-1 text-xs sm:text-sm"
+                  className="gap-1.5 px-2 sm:px-3 py-1 text-xs sm:text-sm border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                 >
                   <BrainCircuit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   <span className="hidden sm:inline">AI Analysis</span>
                   <span className="sm:hidden">AI</span>
                 </Badge>
-                <span className="text-xs sm:text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                   {format(new Date(analysis.createdAt), "MMM d, yyyy")}
                 </span>
               </div>
@@ -320,19 +352,18 @@ export default function AnalysisDetailPage() {
                 <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 break-words">
                   {analysis.job?.title || "Job Analysis"}
                 </h1>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-muted-foreground text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-2 text-slate-500 dark:text-slate-400 text-sm">
                   {analysis.job?.company && (
                     <span className="flex items-center gap-1.5">
                       <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="truncate">{analysis.job.company}</span>
                     </span>
                   )}
-                  {/* ✅ ADD LINK TO CV */}
                   {analysis.cvVersion?.id && (
                     <Button
                       variant="link"
                       size="sm"
-                      className="h-auto p-0 gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                      className="h-auto p-0 gap-1 text-xs sm:text-sm text-slate-500 hover:text-[#005f78] dark:text-slate-400 dark:hover:text-[#4db8d4]"
                       onClick={() =>
                         router.push(`/my-account/cv/${analysis.cvVersion.id}`)
                       }
@@ -347,7 +378,7 @@ export default function AnalysisDetailPage() {
               </div>
             </motion.div>
 
-            {/* Score Circle */}
+            {/* Score Circle - Unified teal gradient */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -379,36 +410,47 @@ export default function AnalysisDetailPage() {
                   />
                   <defs>
                     <linearGradient
-                      id={`gradient-${verdict}`}
+                      id={`gradient-proceed`}
                       x1="0%"
                       y1="0%"
                       x2="100%"
                       y2="0%"
                     >
-                      <stop
-                        offset="0%"
-                        stopColor="currentColor"
-                        className={cn(
-                          "text-",
-                          verdictInfo.gradient.split(" ")[1],
-                        )}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="currentColor"
-                        className={cn(
-                          "text-",
-                          verdictInfo.gradient.split(" ")[3],
-                        )}
-                      />
+                      <stop offset="0%" stopColor="#005f78" />
+                      <stop offset="100%" stopColor="#007a99" />
+                    </linearGradient>
+                    <linearGradient
+                      id={`gradient-consider`}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#ea580c" />
+                    </linearGradient>
+                    <linearGradient
+                      id={`gradient-high_risk`}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#f43f5e" />
+                      <stop offset="100%" stopColor="#e11d48" />
                     </linearGradient>
                   </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  <span
+                    className={cn(
+                      "text-xl sm:text-2xl md:text-3xl font-bold",
+                      getScoreColor(matchScore),
+                    )}
+                  >
                     {matchScore}%
                   </span>
-                  <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Match
                   </span>
                 </div>
@@ -431,7 +473,7 @@ export default function AnalysisDetailPage() {
                         : "Low"}
                   </span>
                 </Badge>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-[150px] sm:max-w-[200px] hidden sm:block">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-[150px] sm:max-w-[200px] hidden sm:block">
                   {verdictInfo.description}
                 </p>
               </div>
@@ -441,7 +483,7 @@ export default function AnalysisDetailPage() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
-        {/* Key Metrics Grid */}
+        {/* Key Metrics Grid - Unified teal theme */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -456,6 +498,7 @@ export default function AnalysisDetailPage() {
             trend={
               confidence > 80 ? "up" : confidence > 50 ? "neutral" : "down"
             }
+            highlight={confidence > 80 ? "success" : "primary"}
           />
           <MetricCard
             icon={Briefcase}
@@ -463,12 +506,14 @@ export default function AnalysisDetailPage() {
             value={seniorityText}
             subtext="Level alignment"
             trend={seniorityGap === 0 ? "up" : "neutral"}
+            highlight={seniorityGap === 0 ? "success" : "primary"}
           />
           <MetricCard
             icon={MapPin}
             label="Remote Work"
             value={remoteText}
             subtext="Work arrangement"
+            highlight="primary"
           />
           <MetricCard
             icon={Zap}
@@ -486,15 +531,15 @@ export default function AnalysisDetailPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="overflow-hidden border-slate-200/60 dark:border-slate-800/60 shadow-sm">
-              <CardHeader className="border-b bg-slate-50/50 dark:bg-slate-900/50 px-4 sm:px-6 py-3 sm:py-4">
+            <Card className="overflow-hidden border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#161b1d]/50 px-4 sm:px-6 py-3 sm:py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4]" />
                       Score Breakdown
                     </CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                       Detailed scoring across key dimensions
                     </CardDescription>
                   </div>
@@ -518,25 +563,21 @@ export default function AnalysisDetailPage() {
                           <span
                             className={cn(
                               "text-xs sm:text-sm font-bold",
-                              value >= 80
-                                ? "text-emerald-600"
-                                : value >= 60
-                                  ? "text-amber-600"
-                                  : "text-red-600",
+                              getScoreColor(value as number),
                             )}
                           >
                             {value}%
                           </span>
                         </div>
                         <Progress
-                          value={value}
+                          value={value as number}
                           className={cn(
-                            "h-1.5 sm:h-2",
-                            value >= 80
-                              ? "bg-emerald-100 [&>div]:bg-emerald-500"
-                              : value >= 60
-                                ? "bg-amber-100 [&>div]:bg-amber-500"
-                                : "bg-red-100 [&>div]:bg-red-500",
+                            "h-1.5 sm:h-2 bg-slate-200 dark:bg-slate-700",
+                            (value as number) >= 80
+                              ? "[&>div]:bg-[#005f78]"
+                              : (value as number) >= 60
+                                ? "[&>div]:bg-amber-500"
+                                : "[&>div]:bg-rose-500",
                           )}
                         />
                       </motion.div>
@@ -548,7 +589,7 @@ export default function AnalysisDetailPage() {
           </motion.div>
         )}
 
-        {/* Detailed Analysis Tabs (unchanged except for minor type fixes) */}
+        {/* Detailed Analysis Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -559,7 +600,6 @@ export default function AnalysisDetailPage() {
             onValueChange={setActiveTab}
             className="space-y-4 sm:space-y-6"
           >
-            {/* Mobile/Desktop tabs remain the same */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
               <div className="flex items-center justify-between sm:hidden">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -571,16 +611,23 @@ export default function AnalysisDetailPage() {
                 </span>
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 border-slate-200 dark:border-slate-700"
+                    >
                       <Menu className="h-4 w-4" />
                       Tabs
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-auto">
+                  <SheetContent
+                    side="bottom"
+                    className="h-auto bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-800"
+                  >
                     <div className="flex flex-col gap-2 p-4">
                       <Button
                         variant={activeTab === "match" ? "default" : "ghost"}
-                        className="justify-start gap-2"
+                        className="justify-start gap-2 bg-[#005f78] text-white hover:bg-[#004a5e]"
                         onClick={() => {
                           setActiveTab("match");
                           setMobileMenuOpen(false);
@@ -592,7 +639,7 @@ export default function AnalysisDetailPage() {
                       {sellData && (
                         <Button
                           variant={activeTab === "sell" ? "default" : "ghost"}
-                          className="justify-start gap-2"
+                          className="justify-start gap-2 bg-[#005f78] text-white hover:bg-[#004a5e]"
                           onClick={() => {
                             setActiveTab("sell");
                             setMobileMenuOpen(false);
@@ -604,7 +651,7 @@ export default function AnalysisDetailPage() {
                       )}
                       <Button
                         variant={activeTab === "raw" ? "default" : "ghost"}
-                        className="justify-start gap-2"
+                        className="justify-start gap-2 bg-[#005f78] text-white hover:bg-[#004a5e]"
                         onClick={() => {
                           setActiveTab("raw");
                           setMobileMenuOpen(false);
@@ -618,10 +665,10 @@ export default function AnalysisDetailPage() {
                 </Sheet>
               </div>
 
-              <TabsList className="hidden sm:flex bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-xl h-auto flex-wrap">
+              <TabsList className="hidden sm:flex bg-slate-100 dark:bg-[#161b1d] p-1 rounded-xl h-auto flex-wrap border border-slate-200 dark:border-slate-800">
                 <TabsTrigger
                   value="match"
-                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#1c2225] data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:text-[#4db8d4] text-xs sm:text-sm py-2 px-3"
                 >
                   <FileSearch className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Match Analysis
@@ -629,7 +676,7 @@ export default function AnalysisDetailPage() {
                 {sellData && (
                   <TabsTrigger
                     value="sell"
-                    className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                    className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#1c2225] data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:text-[#4db8d4] text-xs sm:text-sm py-2 px-3"
                   >
                     <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Optimization
@@ -637,7 +684,7 @@ export default function AnalysisDetailPage() {
                 )}
                 <TabsTrigger
                   value="raw"
-                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm text-xs sm:text-sm py-2 px-3"
+                  className="rounded-lg gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-[#1c2225] data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:text-[#4db8d4] text-xs sm:text-sm py-2 px-3"
                 >
                   <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Raw Data
@@ -648,7 +695,7 @@ export default function AnalysisDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10 hover:text-[#005f78] dark:hover:text-[#4db8d4]"
                 >
                   <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Export</span>
@@ -656,7 +703,7 @@ export default function AnalysisDetailPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                  className="gap-2 text-xs sm:text-sm h-8 sm:h-9 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10 hover:text-[#005f78] dark:hover:text-[#4db8d4]"
                 >
                   <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Share</span>
@@ -670,16 +717,16 @@ export default function AnalysisDetailPage() {
                 className="space-y-4 sm:space-y-6 mt-0"
               >
                 {/* AI Rationale */}
-                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                   <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                      <BrainCircuit className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-500" />
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                      <BrainCircuit className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4]" />
                       AI Assessment
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 sm:p-4 border border-slate-200 dark:border-slate-800">
-                      <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 mb-2" />
+                      <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4] mb-2" />
                       <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
                         {rawMatchData?.rationale ||
                           "No rationale provided by the AI."}
@@ -689,13 +736,13 @@ export default function AnalysisDetailPage() {
                 </Card>
 
                 {/* Critical Gaps */}
-                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                   <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
                       <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                       Critical Gaps & Recommendations
                     </CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                       Issues identified and how to address them
                     </CardDescription>
                   </CardHeader>
@@ -712,7 +759,7 @@ export default function AnalysisDetailPage() {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.1 }}
-                                className="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors"
+                                className="flex gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors"
                               >
                                 <div
                                   className={cn(
@@ -738,7 +785,7 @@ export default function AnalysisDetailPage() {
                                     </Badge>
                                   </div>
                                   <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                    <span className="font-medium text-[#005f78] dark:text-[#4db8d4]">
                                       Fix:{" "}
                                     </span>
                                     {gap.fix}
@@ -751,13 +798,13 @@ export default function AnalysisDetailPage() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3 sm:mb-4">
-                          <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#005f78]/10 dark:bg-[#005f78]/20 flex items-center justify-center mb-3 sm:mb-4">
+                          <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-[#005f78] dark:text-[#4db8d4]" />
                         </div>
                         <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100">
                           No Critical Gaps
                         </h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mt-1 px-4">
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-1 px-4">
                           Great job! The AI didn't identify any major gaps in
                           your profile for this role.
                         </p>
@@ -769,9 +816,9 @@ export default function AnalysisDetailPage() {
                 {/* Recommendations */}
                 {rawMatchData?.recommendations &&
                   rawMatchData.recommendations.length > 0 && (
-                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                    <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                       <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
                           <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                           Strategic Recommendations
                         </CardTitle>
@@ -787,7 +834,7 @@ export default function AnalysisDetailPage() {
                                 transition={{ delay: i * 0.1 }}
                                 className="flex gap-2 sm:gap-3 items-start"
                               >
-                                <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center text-xs font-bold">
+                                <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#005f78]/10 dark:bg-[#005f78]/20 text-[#005f78] dark:text-[#4db8d4] flex items-center justify-center text-xs font-bold">
                                   {i + 1}
                                 </span>
                                 <span className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 pt-0.5">
@@ -809,7 +856,7 @@ export default function AnalysisDetailPage() {
                 >
                   {/* Positioning Strategy */}
                   {sellData.positioning && (
-                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
+                    <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-[#1c2225]">
                       <div
                         className={cn(
                           "h-1.5 sm:h-2 bg-gradient-to-r",
@@ -817,14 +864,14 @@ export default function AnalysisDetailPage() {
                         )}
                       />
                       <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                          <Target className="h-4 w-4 sm:h-5 sm:w-5 text-violet-500" />
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                          <Target className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4]" />
                           Positioning Strategy
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
                         <div>
-                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             Angle
                           </h4>
                           <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -832,7 +879,7 @@ export default function AnalysisDetailPage() {
                           </p>
                         </div>
                         <div>
-                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             Rationale
                           </h4>
                           <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -840,7 +887,7 @@ export default function AnalysisDetailPage() {
                           </p>
                         </div>
                         <div>
-                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
                             Key Themes
                           </h4>
                           <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -848,7 +895,7 @@ export default function AnalysisDetailPage() {
                               (theme: string) => (
                                 <Badge
                                   key={theme}
-                                  className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200"
+                                  className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30 hover:bg-[#005f78]/20 dark:hover:bg-[#005f78]/30"
                                 >
                                   {theme}
                                 </Badge>
@@ -862,9 +909,9 @@ export default function AnalysisDetailPage() {
 
                   {/* Profile Optimization */}
                   {sellData.profileOptimization && (
-                    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                    <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                       <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
                           <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
                           Profile Optimization
                         </CardTitle>
@@ -872,29 +919,29 @@ export default function AnalysisDetailPage() {
                       <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                           <div className="space-y-2">
-                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                               Original Headline
                             </h4>
-                            <div className="p-3 sm:p-4 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 line-through decoration-slate-400 text-sm sm:text-base">
+                            <div className="p-3 sm:p-4 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 line-through decoration-slate-400 text-sm sm:text-base">
                               {sellData.profileOptimization.originalHeadline}
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                            <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                               Optimized Headline
                             </h4>
-                            <div className="p-3 sm:p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 font-medium text-sm sm:text-base">
+                            <div className="p-3 sm:p-4 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/20 border border-[#005f78]/20 dark:border-[#005f78]/30 text-[#005f78] dark:text-[#4db8d4] font-medium text-sm sm:text-base">
                               {sellData.profileOptimization.optimizedHeadline}
                             </div>
                           </div>
                         </div>
-                        <Separator />
+                        <Separator className="bg-slate-100 dark:bg-slate-800" />
                         <div>
-                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 sm:mb-3">
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 sm:mb-3">
                             Elevator Pitch
                           </h4>
-                          <div className="p-3 sm:p-4 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700">
-                            <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 mb-2" />
+                          <div className="p-3 sm:p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4] mb-2" />
                             <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 italic leading-relaxed">
                               "{sellData.profileOptimization.elevatorPitch}"
                             </p>
@@ -909,21 +956,21 @@ export default function AnalysisDetailPage() {
                     (exp: ExperienceTransformation, idx: number) => (
                       <Card
                         key={idx}
-                        className="border-slate-200/60 dark:border-slate-800/60 shadow-sm"
+                        className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]"
                       >
                         <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                          <CardTitle className="text-base sm:text-lg">
+                          <CardTitle className="text-base sm:text-lg text-slate-900 dark:text-slate-100">
                             {exp.role}
                           </CardTitle>
-                          <CardDescription className="text-xs sm:text-sm">
+                          <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                             Experience optimization with keyword injection
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6 space-y-4 sm:space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                             <div className="space-y-2 sm:space-y-3">
-                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
+                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-500" />
                                 Original
                               </h4>
                               <ul className="space-y-1.5 sm:space-y-2">
@@ -931,7 +978,7 @@ export default function AnalysisDetailPage() {
                                   (b: string, i: number) => (
                                     <li
                                       key={i}
-                                      className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-through decoration-slate-400/50 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-slate-400"
+                                      className="text-xs sm:text-sm text-slate-500 dark:text-slate-500 line-through decoration-slate-400/50 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-slate-400"
                                     >
                                       {b}
                                     </li>
@@ -940,8 +987,8 @@ export default function AnalysisDetailPage() {
                               </ul>
                             </div>
                             <div className="space-y-2 sm:space-y-3">
-                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+                              <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#005f78] dark:text-[#4db8d4]" />
                                 Optimized
                               </h4>
                               <ul className="space-y-1.5 sm:space-y-2">
@@ -949,7 +996,7 @@ export default function AnalysisDetailPage() {
                                   (b: string, i: number) => (
                                     <li
                                       key={i}
-                                      className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-emerald-500 font-medium"
+                                      className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 pl-3 sm:pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-[#005f78] dark:before:text-[#4db8d4] font-medium"
                                     >
                                       {b}
                                     </li>
@@ -960,9 +1007,9 @@ export default function AnalysisDetailPage() {
                           </div>
                           {exp.injectedKeywords?.length > 0 && (
                             <>
-                              <Separator />
+                              <Separator className="bg-slate-100 dark:bg-slate-800" />
                               <div>
-                                <h4 className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                <h4 className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                                   Injected Keywords
                                 </h4>
                                 <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -970,7 +1017,7 @@ export default function AnalysisDetailPage() {
                                     <Badge
                                       key={kw}
                                       variant="outline"
-                                      className="gap-1 border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-xs"
+                                      className="gap-1 border-[#005f78]/30 text-[#005f78] bg-[#005f78]/5 dark:border-[#005f78]/40 dark:text-[#4db8d4] dark:bg-[#005f78]/10 text-xs"
                                     >
                                       <ArrowUpRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                                       {kw}
@@ -988,13 +1035,13 @@ export default function AnalysisDetailPage() {
                   {/* Competency Mapping */}
                   {sellData.competencyMapping &&
                     sellData.competencyMapping.length > 0 && (
-                      <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                      <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                         <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
-                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                            <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                          <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-slate-900 dark:text-slate-100">
+                            <BadgeCheck className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4]" />
                             Competency Mapping
                           </CardTitle>
-                          <CardDescription className="text-xs sm:text-sm">
+                          <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                             How your skills align with job requirements
                           </CardDescription>
                         </CardHeader>
@@ -1007,7 +1054,7 @@ export default function AnalysisDetailPage() {
                                 return (
                                   <div
                                     key={i}
-                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors gap-2 sm:gap-4"
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors gap-2 sm:gap-4"
                                   >
                                     <div className="flex-1 min-w-0">
                                       <p className="font-medium text-sm sm:text-base text-slate-900 dark:text-slate-100">
@@ -1037,27 +1084,27 @@ export default function AnalysisDetailPage() {
               )}
 
               <TabsContent value="raw" className="mt-0">
-                <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm">
+                <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-[#1c2225]">
                   <CardHeader className="flex flex-row items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
                     <div>
-                      <CardTitle className="text-base sm:text-lg">
+                      <CardTitle className="text-base sm:text-lg text-slate-900 dark:text-slate-100">
                         Raw Analysis Data
                       </CardTitle>
-                      <CardDescription className="text-xs sm:text-sm">
+                      <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                         Complete JSON output from AI analysis
                       </CardDescription>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 text-xs sm:text-sm h-8"
+                      className="gap-2 text-xs sm:text-sm h-8 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
                     >
                       <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span className="hidden sm:inline">Copy JSON</span>
                     </Button>
                   </CardHeader>
                   <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-                    <ScrollArea className="h-[400px] sm:h-[500px] md:h-[600px] w-full rounded-lg border bg-slate-950">
+                    <ScrollArea className="h-[400px] sm:h-[500px] md:h-[600px] w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-950">
                       <pre className="p-3 sm:p-4 text-[10px] sm:text-xs font-mono text-slate-300 leading-relaxed">
                         {JSON.stringify(analysis.analysis, null, 2)}
                       </pre>
@@ -1075,16 +1122,19 @@ export default function AnalysisDetailPage() {
 
 function AnalysisSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
       <div className="h-48 sm:h-64 bg-slate-200 dark:bg-slate-800 animate-pulse" />
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 sm:h-32 w-full" />
+            <Skeleton
+              key={i}
+              className="h-24 sm:h-32 w-full bg-slate-200 dark:bg-slate-800"
+            />
           ))}
         </div>
-        <Skeleton className="h-48 sm:h-64 w-full" />
-        <Skeleton className="h-64 sm:h-96 w-full" />
+        <Skeleton className="h-48 sm:h-64 w-full bg-slate-200 dark:bg-slate-800" />
+        <Skeleton className="h-64 sm:h-96 w-full bg-slate-200 dark:bg-slate-800" />
       </div>
     </div>
   );
@@ -1093,20 +1143,20 @@ function AnalysisSkeleton() {
 function AnalysisNotFound() {
   const router = useRouter();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#161b1d] px-4">
       <div className="text-center max-w-md mx-auto">
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-          <FileSearch className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+          <FileSearch className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400 dark:text-slate-500" />
         </div>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
           Analysis Not Found
         </h2>
-        <p className="text-sm text-muted-foreground mt-2">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
           The analysis you're looking for doesn't exist or you don't have access
           to it.
         </p>
         <Button
-          className="mt-4 sm:mt-6 gap-2"
+          className="mt-4 sm:mt-6 gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"
           onClick={() => router.push("/cv")}
         >
           <ArrowLeft className="h-4 w-4" />

@@ -126,32 +126,32 @@ export default function CVPage() {
       {/* Stats Overview */}
       {!isLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-blue-50/50 to-transparent border-blue-100">
+          <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20 dark:from-blue-500/5">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-blue-700">
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                 {cvs.length}
               </div>
-              <p className="text-xs text-blue-600/80 font-medium uppercase tracking-wide">
+              <p className="text-xs text-blue-600/80 dark:text-blue-400/80 font-medium uppercase tracking-wide">
                 Total CVs
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-emerald-50/50 to-transparent border-emerald-100">
+          <Card className="bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20 dark:from-emerald-500/5">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-emerald-700">
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                 {
                   cvs.filter((c: CVVersion) => (c.atsFormatScore || 0) >= 80)
                     .length
                 }
               </div>
-              <p className="text-xs text-emerald-600/80 font-medium uppercase tracking-wide">
+              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 font-medium uppercase tracking-wide">
                 ATS Ready
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-violet-50/50 to-transparent border-violet-100">
+          <Card className="bg-gradient-to-br from-violet-500/10 to-transparent border-violet-500/20 dark:from-violet-500/5">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-violet-700">
+              <div className="text-2xl font-bold text-violet-700 dark:text-violet-400">
                 {
                   cvs.filter(
                     (c: CVVersion) =>
@@ -159,20 +159,20 @@ export default function CVPage() {
                   ).length
                 }
               </div>
-              <p className="text-xs text-violet-600/80 font-medium uppercase tracking-wide">
+              <p className="text-xs text-violet-600/80 dark:text-violet-400/80 font-medium uppercase tracking-wide">
                 Optimized
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-amber-50/50 to-transparent border-amber-100">
+          <Card className="bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20 dark:from-amber-500/5">
             <CardContent className="pt-4">
-              <div className="text-2xl font-bold text-amber-700">
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
                 {
                   cvs.filter((c: CVVersion) => (c.atsFormatScore || 0) < 60)
                     .length
                 }
               </div>
-              <p className="text-xs text-amber-600/80 font-medium uppercase tracking-wide">
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 font-medium uppercase tracking-wide">
                 Needs Work
               </p>
             </CardContent>

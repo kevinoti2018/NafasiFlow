@@ -39,7 +39,7 @@ export async function GET(
       job: {
         select: { id: true, title: true, company: true, normalizedTitle: true },
       },
-      application: { select: { id: true, status: true } },
+      // application: { select: { id: true, status: true } },
     },
   });
 

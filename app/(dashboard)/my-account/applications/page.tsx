@@ -85,24 +85,25 @@ type ApplicationWithJob = {
   } | null;
 };
 
+// Consistent status configuration using primary teal
 const statusConfig = {
   saved: {
     color:
-      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300",
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
     icon: FileText,
     label: "Saved",
     description: "Bookmarked for later",
   },
   applied: {
     color:
-      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300",
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     icon: Briefcase,
     label: "Applied",
     description: "Application submitted",
   },
   interviewing: {
     color:
-      "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300",
+      "bg-[#005f78]/15 text-[#005f78] border-[#005f78]/25 dark:bg-[#005f78]/25 dark:text-[#4db8d4] dark:border-[#005f78]/40",
     icon: Sparkles,
     label: "Interviewing",
     description: "In interview process",
@@ -165,7 +166,7 @@ export default function ApplicationsPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
         {/* Header */}
         <motion.div
@@ -177,13 +178,13 @@ export default function ApplicationsPage() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               Applications
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
               Track and manage your job applications
             </p>
           </div>
           <Button
             onClick={() => router.push("/my-account/jobs")}
-            className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 w-full sm:w-auto"
+            className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white shadow-lg shadow-[#005f78]/25 w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             Find Jobs
@@ -202,27 +203,27 @@ export default function ApplicationsPage() {
               icon={Briefcase}
               label="Total Applications"
               value={totalApps}
-              color="blue"
+              color="primary"
             />
             <StatCard
               icon={Sparkles}
               label="Interviewing"
               value={interviewingCount}
-              color="violet"
+              color="primary"
               trend={interviewingCount > 0 ? "up" : undefined}
             />
             <StatCard
               icon={CheckCircle2}
               label="Offers"
               value={offeredCount}
-              color="emerald"
+              color="success"
               trend={offeredCount > 0 ? "up" : undefined}
             />
             <StatCard
               icon={Target}
               label="Avg Match Score"
               value={`${avgMatchScore}%`}
-              color="amber"
+              color="primary"
               subtext="Across all apps"
             />
           </motion.div>
@@ -234,14 +235,14 @@ export default function ApplicationsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
-            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6 border-b bg-slate-50/50 dark:bg-slate-900/50">
+          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-[#1c2225]">
+            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#161b1d]/50">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <CardTitle className="text-lg sm:text-xl">
+                  <CardTitle className="text-lg sm:text-xl text-slate-900 dark:text-slate-100">
                     Your Applications
                   </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-1">
+                  <CardDescription className="text-xs sm:text-sm mt-1 text-slate-500 dark:text-slate-400">
                     {filteredApps.length}{" "}
                     {filteredApps.length === 1 ? "application" : "applications"}{" "}
                     found
@@ -251,26 +252,56 @@ export default function ApplicationsPage() {
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <div className="relative flex-1 sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
                       placeholder="Search jobs..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 h-9 sm:h-10 text-sm"
+                      className="pl-9 h-9 sm:h-10 text-sm bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                     />
                   </div>
                   <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="w-full sm:w-[160px] h-9 sm:h-10">
-                      <Filter className="h-4 w-4 mr-2 shrink-0" />
+                    <SelectTrigger className="w-full sm:w-[160px] h-9 sm:h-10 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                      <Filter className="h-4 w-4 mr-2 shrink-0 text-slate-500" />
                       <SelectValue placeholder="Filter status" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="saved">Saved</SelectItem>
-                      <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interviewing">Interviewing</SelectItem>
-                      <SelectItem value="offered">Offered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectContent className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700">
+                      <SelectItem
+                        value="all"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        All statuses
+                      </SelectItem>
+                      <SelectItem
+                        value="saved"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        Saved
+                      </SelectItem>
+                      <SelectItem
+                        value="applied"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        Applied
+                      </SelectItem>
+                      <SelectItem
+                        value="interviewing"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        Interviewing
+                      </SelectItem>
+                      <SelectItem
+                        value="offered"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        Offered
+                      </SelectItem>
+                      <SelectItem
+                        value="rejected"
+                        className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                      >
+                        Rejected
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -282,12 +313,12 @@ export default function ApplicationsPage() {
                 <div className="p-4 sm:p-6 space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex items-center gap-4">
-                      <Skeleton className="h-12 w-12 rounded-lg" />
+                      <Skeleton className="h-12 w-12 rounded-lg bg-slate-200 dark:bg-slate-800" />
                       <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-3 w-1/4" />
+                        <Skeleton className="h-4 w-1/3 bg-slate-200 dark:bg-slate-800" />
+                        <Skeleton className="h-3 w-1/4 bg-slate-200 dark:bg-slate-800" />
                       </div>
-                      <Skeleton className="h-8 w-24" />
+                      <Skeleton className="h-8 w-24 bg-slate-200 dark:bg-slate-800" />
                     </div>
                   ))}
                 </div>
@@ -302,12 +333,20 @@ export default function ApplicationsPage() {
                   <div className="hidden md:block overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-[35%]">Position</TableHead>
-                          <TableHead className="w-[15%]">Match Score</TableHead>
-                          <TableHead className="w-[15%]">Status</TableHead>
-                          <TableHead className="w-[15%]">Applied</TableHead>
-                          <TableHead className="w-[20%] text-right">
+                        <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                          <TableHead className="w-[35%] text-slate-500 dark:text-slate-400">
+                            Position
+                          </TableHead>
+                          <TableHead className="w-[15%] text-slate-500 dark:text-slate-400">
+                            Match Score
+                          </TableHead>
+                          <TableHead className="w-[15%] text-slate-500 dark:text-slate-400">
+                            Status
+                          </TableHead>
+                          <TableHead className="w-[15%] text-slate-500 dark:text-slate-400">
+                            Applied
+                          </TableHead>
+                          <TableHead className="w-[20%] text-right text-slate-500 dark:text-slate-400">
                             Actions
                           </TableHead>
                         </TableRow>
@@ -325,7 +364,7 @@ export default function ApplicationsPage() {
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: idx * 0.05 }}
-                                  className="group cursor-pointer border-b hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
+                                  className="group cursor-pointer border-b border-slate-100 dark:border-slate-800 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/5 transition-colors"
                                   onClick={() =>
                                     router.push(
                                       `/my-account/applications/${app.id}`,
@@ -334,15 +373,15 @@ export default function ApplicationsPage() {
                                 >
                                   <TableCell className="py-4">
                                     <div className="flex items-start gap-3">
-                                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                                        <Building2 className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                                      <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                        <Building2 className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                                       </div>
                                       <div className="min-w-0">
                                         <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                                           {app.job?.title ||
                                             "Untitled Position"}
                                         </p>
-                                        <p className="text-sm text-muted-foreground truncate">
+                                        <p className="text-sm text-slate-500 dark:text-slate-500 truncate">
                                           {app.job?.company ||
                                             "Unknown Company"}
                                         </p>
@@ -355,10 +394,10 @@ export default function ApplicationsPage() {
                                         className={cn(
                                           "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
                                           (app.matchScore || 0) >= 80
-                                            ? "bg-emerald-100 text-emerald-700"
+                                            ? "bg-[#005f78]/15 text-[#005f78] dark:text-[#4db8d4]"
                                             : (app.matchScore || 0) >= 60
-                                              ? "bg-amber-100 text-amber-700"
-                                              : "bg-red-100 text-red-700",
+                                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
                                         )}
                                       >
                                         {app.matchScore || 0}%
@@ -367,12 +406,12 @@ export default function ApplicationsPage() {
                                         <Progress
                                           value={app.matchScore || 0}
                                           className={cn(
-                                            "h-1.5",
+                                            "h-1.5 bg-slate-200 dark:bg-slate-700",
                                             (app.matchScore || 0) >= 80
-                                              ? "bg-emerald-100 [&>div]:bg-emerald-500"
+                                              ? "[&>div]:bg-[#005f78]"
                                               : (app.matchScore || 0) >= 60
-                                                ? "bg-amber-100 [&>div]:bg-amber-500"
-                                                : "bg-red-100 [&>div]:bg-red-500",
+                                                ? "[&>div]:bg-amber-500"
+                                                : "[&>div]:bg-red-500",
                                           )}
                                         />
                                       </div>
@@ -390,7 +429,7 @@ export default function ApplicationsPage() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                                       <Calendar className="h-3.5 w-3.5" />
                                       {app.appliedAt
                                         ? format(
@@ -411,6 +450,7 @@ export default function ApplicationsPage() {
                                             `/my-account/applications/${app.id}`,
                                           );
                                         }}
+                                        className="text-[#005f78] hover:text-[#004a5e] hover:bg-[#005f78]/10 dark:text-[#4db8d4] dark:hover:bg-[#005f78]/10"
                                       >
                                         View
                                         <ArrowRight className="h-4 w-4 ml-1" />
@@ -440,7 +480,7 @@ export default function ApplicationsPage() {
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: idx * 0.05 }}
-                              className="p-4 active:bg-slate-50 dark:active:bg-slate-900/50 transition-colors"
+                              className="p-4 active:bg-[#005f78]/5 dark:active:bg-[#005f78]/5 transition-colors"
                               onClick={() =>
                                 router.push(
                                   `/my-account/applications/${app.id}`,
@@ -449,14 +489,14 @@ export default function ApplicationsPage() {
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                                    <Building2 className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                    <Building2 className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
                                       {app.job?.title || "Untitled Position"}
                                     </p>
-                                    <p className="text-xs text-muted-foreground truncate">
+                                    <p className="text-xs text-slate-500 dark:text-slate-500 truncate">
                                       {app.job?.company || "Unknown Company"}
                                     </p>
                                     <div className="flex items-center gap-2 mt-2">
@@ -473,10 +513,10 @@ export default function ApplicationsPage() {
                                         className={cn(
                                           "text-xs font-medium",
                                           (app.matchScore || 0) >= 80
-                                            ? "text-emerald-600"
+                                            ? "text-[#005f78] dark:text-[#4db8d4]"
                                             : (app.matchScore || 0) >= 60
-                                              ? "text-amber-600"
-                                              : "text-red-600",
+                                              ? "text-amber-600 dark:text-amber-400"
+                                              : "text-red-600 dark:text-red-400",
                                         )}
                                       >
                                         {app.matchScore || 0}% match
@@ -484,7 +524,7 @@ export default function ApplicationsPage() {
                                     </div>
                                   </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-slate-400 shrink-0" />
+                                <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-600 shrink-0" />
                               </div>
                             </motion.div>
                           );
@@ -495,8 +535,8 @@ export default function ApplicationsPage() {
 
                   {/* Pagination */}
                   {pagination && pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/50">
-                      <p className="text-xs sm:text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#161b1d]/50">
+                      <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                         Page {page} of {pagination.totalPages}
                       </p>
                       <div className="flex items-center gap-2">
@@ -505,7 +545,7 @@ export default function ApplicationsPage() {
                           size="sm"
                           disabled={page <= 1}
                           onClick={() => setPage(page - 1)}
-                          className="h-8 sm:h-9 px-2 sm:px-3"
+                          className="h-8 sm:h-9 px-2 sm:px-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
                         >
                           <ChevronLeft className="h-4 w-4 sm:mr-1" />
                           <span className="hidden sm:inline">Previous</span>
@@ -515,7 +555,7 @@ export default function ApplicationsPage() {
                           size="sm"
                           disabled={page >= pagination.totalPages}
                           onClick={() => setPage(page + 1)}
-                          className="h-8 sm:h-9 px-2 sm:px-3"
+                          className="h-8 sm:h-9 px-2 sm:px-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
                         >
                           <span className="hidden sm:inline">Next</span>
                           <ChevronRight className="h-4 w-4 sm:ml-1" />
@@ -535,17 +575,14 @@ export default function ApplicationsPage() {
 
 function StatCard({ icon: Icon, label, value, color, trend, subtext }: any) {
   const colorClasses = {
-    blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    violet:
-      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-    emerald:
+    primary:
+      "bg-[#005f78]/10 text-[#005f78] dark:bg-[#005f78]/20 dark:text-[#4db8d4]",
+    success:
       "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    amber:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   };
 
   return (
-    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+    <Card className="border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 bg-white dark:bg-[#1c2225]">
       <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="flex items-start justify-between">
           <div
@@ -557,7 +594,7 @@ function StatCard({ icon: Icon, label, value, color, trend, subtext }: any) {
             <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
           {trend === "up" && (
-            <div className="flex items-center text-emerald-600 text-xs font-medium">
+            <div className="flex items-center text-[#005f78] dark:text-[#4db8d4] text-xs font-medium">
               <TrendingUp className="h-3 w-3 mr-0.5" />
               Active
             </div>
@@ -567,11 +604,11 @@ function StatCard({ icon: Icon, label, value, color, trend, subtext }: any) {
           <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
             {value}
           </p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {label}
           </p>
           {subtext && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5">
               {subtext}
             </p>
           )}
@@ -592,15 +629,15 @@ function EmptyState({
     <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 text-center">
       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
         {search ? (
-          <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+          <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400 dark:text-slate-500" />
         ) : (
-          <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
+          <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400 dark:text-slate-500" />
         )}
       </div>
       <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
         {search ? "No matches found" : "No applications yet"}
       </h3>
-      <p className="text-sm text-muted-foreground max-w-sm mt-2 px-4">
+      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-2 px-4">
         {search
           ? "Try adjusting your search terms or filters to find what you're looking for."
           : "Start your job search and track your applications here."}
@@ -608,7 +645,7 @@ function EmptyState({
       {!search && (
         <Button
           onClick={onBrowse}
-          className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 w-full sm:w-auto"
+          className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white shadow-lg shadow-[#005f78]/25 w-full sm:w-auto mt-4"
         >
           <Plus className="h-4 w-4" />
           Browse Jobs

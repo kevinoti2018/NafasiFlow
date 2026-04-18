@@ -55,9 +55,6 @@ export async function GET(req: NextRequest) {
           },
         },
         template: { select: { id: true, name: true } },
-        cvJobAnalysis: {
-          select: { matchScore: true, rankSignal: true, verdict: true },
-        },
         statusHistory: { orderBy: { changedAt: "desc" }, take: 1 },
       },
     }),
@@ -146,6 +143,7 @@ export async function POST(req: NextRequest) {
       matchScore: analysis.matchScore,
       aiInsightsSnapshot: analysis.analysis as Prisma.InputJsonValue,
       analysisVersion: cvVersion.analysisVersion,
+      analysisId: analysis.id,
       status: "saved",
     },
   });

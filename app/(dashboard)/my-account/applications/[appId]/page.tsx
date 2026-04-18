@@ -31,6 +31,7 @@ import {
 } from "@/hooks/use-application";
 import { cn } from "@/lib/utils";
 import { DeleteApplicationDialog } from "@/components/applications/delete-application-dialog";
+
 const statusColors = {
   saved: "bg-gray-100 text-gray-800",
   applied: "bg-blue-100 text-blue-800",
@@ -40,11 +41,13 @@ const statusColors = {
 };
 
 const statusOrder = ["saved", "applied", "interviewing", "offered", "rejected"];
+
 type TimelineEntry = {
   id: string;
   status: "saved" | "applied" | "interviewing" | "rejected" | "offered";
   changedAt: string | Date;
 };
+
 export default function ApplicationDetailPage() {
   const { appId } = useParams();
   const router = useRouter();
@@ -71,12 +74,13 @@ export default function ApplicationDetailPage() {
     await deleteMutation.mutateAsync(application.id);
     router.push("/my-account/applications");
   };
+
   if (isLoading) return <DetailSkeleton />;
   if (!application) return <NotFound />;
 
   const job = application.job;
   const cv = application.cvVersion;
-  const analysisSnapshot = application.aiInsightsSnapshot;
+  const analysisId = application.analysisId;
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6 max-w-5xl">
@@ -114,6 +118,18 @@ export default function ApplicationDetailPage() {
                 {application.matchScore}%
               </Badge>
             </div>
+            {analysisId && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                onClick={() =>
+                  router.push(`/my-account/analysis/${analysisId}`)
+                }
+              >
+                View Full Analysis
+              </Button>
+            )}
             <Button
               variant="link"
               className="px-0"
@@ -198,26 +214,10 @@ export default function ApplicationDetailPage() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="analysis">
+      <Tabs defaultValue="timeline">
         <TabsList>
-          <TabsTrigger value="analysis">AI Analysis Snapshot</TabsTrigger>
           <TabsTrigger value="timeline">Status Timeline</TabsTrigger>
         </TabsList>
-        <TabsContent value="analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Match Analysis (at time of application)</CardTitle>
-              <CardDescription>
-                AI evaluation snapshot – not updated with CV changes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs bg-muted p-4 rounded-md overflow-auto max-h-96">
-                {JSON.stringify(analysisSnapshot, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="timeline">
           <Card>
             <CardHeader>
