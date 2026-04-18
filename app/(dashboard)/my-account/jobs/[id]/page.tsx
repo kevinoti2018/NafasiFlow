@@ -1,8 +1,7 @@
-// app/(dashboard)/jobs/[id]/page.tsx
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   ArrowLeft,
@@ -75,6 +74,7 @@ import {
   useRetryJobAnalysis,
   useUpdateJob,
   useDeleteJob,
+  useUpdateJobStatus,
 } from "@/hooks/use-jobs";
 import { useAnalysesByJob } from "@/hooks/use-analysis";
 import { useCVs } from "@/hooks/use-cvs";
@@ -167,6 +167,8 @@ export default function JobDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [selectedCvId, setSelectedCvId] = useState<string>("");
+  const [selectedJobStatus, setSelectedJobStatus] = useState<string>("open");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const { data, isLoading, error } = useJob(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByJob(
@@ -179,9 +181,16 @@ export default function JobDetailPage() {
   const analyzeMutation = useAnalyzeCVWithJob();
   const reanalyzeMutation = useReanalyzeJobCV();
   const deleteAnalysisMutation = useDeleteJobAnalysis();
-
+  const updateJobStatus = useUpdateJobStatus();
   const job = data?.job;
   const cvs = cvsData?.cvVersions || [];
+
+  // Sync job status from fetched data
+  useEffect(() => {
+    if (job?.jobStatus) {
+      setSelectedJobStatus(job.jobStatus);
+    }
+  }, [job?.jobStatus]);
 
   const structured = job?.structuredData;
   const isAnalyzed = job?.analysisStatus === "completed" && structured;
@@ -203,7 +212,7 @@ export default function JobDetailPage() {
   const handleDelete = async () => {
     if (!job) return;
     await deleteJob.mutateAsync(job.id);
-    router.push("/jobs");
+    router.push("/my-account/jobs");
   };
 
   const handleAnalyze = () => {
@@ -221,6 +230,16 @@ export default function JobDetailPage() {
     deleteAnalysisMutation.mutate(analysisId);
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!job) return;
+    setIsUpdatingStatus(true);
+    try {
+      await updateJobStatus.mutateAsync({ id: job.id, jobStatus: newStatus });
+      setSelectedJobStatus(newStatus);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
   if (isLoading) return <JobDetailSkeleton />;
   if (error || !job) return <JobNotFound />;
 
@@ -315,6 +334,23 @@ export default function JobDetailPage() {
                       : "Retry Analysis"}
                   </Button>
                 )}
+
+                {/* Job Status Selector */}
+                <Select
+                  value={selectedJobStatus}
+                  onValueChange={handleStatusChange}
+                  disabled={isUpdatingStatus}
+                >
+                  <SelectTrigger className="w-[130px] h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
@@ -641,7 +677,7 @@ export default function JobDetailPage() {
                             Primary Challenge
                           </h4>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                            {structured.painPoints?.primaryChallenge ||
+                            {structured?.painPoints?.primaryChallenge ||
                               "Not specified"}
                           </p>
                         </div>
@@ -651,7 +687,7 @@ export default function JobDetailPage() {
                             Ideal Candidate
                           </h4>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                            {structured.idealCandidatePersona?.description ||
+                            {structured?.idealCandidatePersona?.description ||
                               "Not specified"}
                           </p>
                         </div>
@@ -661,7 +697,7 @@ export default function JobDetailPage() {
                             Company DNA
                           </h4>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                            {structured.companyDNA || "Unknown"}
+                            {structured?.companyDNA || "Unknown"}
                           </p>
                         </div>
                       </div>
@@ -683,7 +719,7 @@ export default function JobDetailPage() {
                             Required Skills
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {structured.requirements?.mandatory?.skills?.map(
+                            {structured?.requirements?.mandatory?.skills?.map(
                               (skill: string) => (
                                 <Badge
                                   key={skill}
@@ -699,7 +735,7 @@ export default function JobDetailPage() {
                             )}
                           </div>
                         </div>
-                        {structured.requirements?.mandatory?.experience && (
+                        {structured?.requirements?.mandatory?.experience && (
                           <div>
                             <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                               Experience Required
@@ -725,7 +761,7 @@ export default function JobDetailPage() {
                             Preferred Skills
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {structured.requirements?.preferred?.skills?.map(
+                            {structured?.requirements?.preferred?.skills?.map(
                               (skill: string) => (
                                 <Badge
                                   key={skill}
@@ -764,7 +800,7 @@ export default function JobDetailPage() {
                           ATS Critical Keywords
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {structured.keywords?.atsCritical?.map(
+                          {structured?.keywords?.atsCritical?.map(
                             (kw: string) => (
                               <Badge
                                 key={kw}
@@ -787,7 +823,7 @@ export default function JobDetailPage() {
                           Recruiter Triggers
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {structured.keywords?.recruiterTriggers?.map(
+                          {structured?.keywords?.recruiterTriggers?.map(
                             (kw: string) => (
                               <Badge
                                 key={kw}
@@ -941,7 +977,6 @@ export default function JobDetailPage() {
                               analysis.verdict as keyof typeof verdictColors
                             ];
                           const VerdictIcon = verdict?.icon || AlertCircle;
-
                           return (
                             <div
                               key={analysis.id}
@@ -1111,10 +1146,13 @@ function JobNotFound() {
           Position Not Found
         </h2>
         <p className="text-slate-500 mb-6">
-          The job you`&apos;`,re looking for doesn`&apos;`,t exist or you
-          don`&apos;`,t have access to it.
+          The job you're looking for doesn't exist or you don't have access to
+          it.
         </p>
-        <Button onClick={() => (window.location.href = "/jobs")} size="lg">
+        <Button
+          onClick={() => (window.location.href = "/my-account/jobs")}
+          size="lg"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Jobs
         </Button>

@@ -1,4 +1,3 @@
-// app/(dashboard)/jobs/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -49,6 +48,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { JobFormModal } from "@/components/jobs/job-form-modal";
 import { DeleteJobDialog } from "@/components/jobs/delete-job-dialog";
 import {
@@ -66,7 +72,7 @@ type JobWithCount = Job & {
   _count?: { cvJobAnalyses?: number };
 };
 
-// Enhanced status configuration
+// Enhanced status configuration for AI analysis
 const statusConfig = {
   pending: {
     label: "Pending",
@@ -94,11 +100,18 @@ const statusConfig = {
   },
 };
 
+const jobStatusColors = {
+  open: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  closed: "bg-amber-100 text-amber-800 border-amber-200",
+  archived: "bg-slate-100 text-slate-800 border-slate-200",
+};
+
 export default function JobsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [jobStatusFilter, setJobStatusFilter] = useState<string>("all");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | undefined>(undefined);
   const [deletingJob, setDeletingJob] = useState<Job | undefined>(undefined);
@@ -121,14 +134,16 @@ export default function JobsPage() {
     0,
   );
 
-  // Filter jobs
+  // Filter jobs by search, AI status, and job status
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
       job.title?.toLowerCase().includes(search.toLowerCase()) ||
       job.company?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || job.analysisStatus === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesJobStatus =
+      jobStatusFilter === "all" || job.jobStatus === jobStatusFilter;
+    return matchesSearch && matchesStatus && matchesJobStatus;
   });
 
   const handleCreate = async (data: CreateJobBody) => {
@@ -183,9 +198,8 @@ export default function JobsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* KPI Cards */}
+        {/* KPI Cards (unchanged) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Total Positions */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -204,7 +218,6 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
-          {/* Analyzed */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -234,7 +247,6 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
-          {/* CV Analyses */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -255,7 +267,6 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
-          {/* Pending */}
           <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-bl-full" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -315,6 +326,8 @@ export default function JobsPage() {
                 </Tabs>
               </div>
             </div>
+
+            {/* Filters: Analysis Status + Job Status */}
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <Button
                 variant={statusFilter === "all" ? "default" : "outline"}
@@ -351,6 +364,25 @@ export default function JobsPage() {
                 <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
                 Processing
               </Button>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-border mx-1" />
+
+              {/* Job Status Filter */}
+              <Select
+                value={jobStatusFilter}
+                onValueChange={setJobStatusFilter}
+              >
+                <SelectTrigger className="w-[130px] h-8">
+                  <SelectValue placeholder="Job status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All jobs</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardHeader>
 
@@ -367,7 +399,8 @@ export default function JobsPage() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="w-[300px]">Position</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Analysis Status</TableHead>
+                      <TableHead>Job Status</TableHead>
                       <TableHead className="hidden md:table-cell">
                         Analyses
                       </TableHead>
@@ -429,6 +462,11 @@ export default function JobsPage() {
                             >
                               <StatusIcon className="h-3 w-3" />
                               {status?.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={jobStatusColors[job.jobStatus]}>
+                              {job.jobStatus}
                             </Badge>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -503,7 +541,7 @@ export default function JobsPage() {
                     })}
                     {filteredJobs.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="h-32 text-center">
+                        <TableCell colSpan={6} className="h-32 text-center">
                           <div className="flex flex-col items-center justify-center text-slate-500">
                             <Search className="h-8 w-8 mb-2 opacity-50" />
                             <p>No positions found</p>
@@ -554,13 +592,18 @@ export default function JobsPage() {
                                 )}
                               />
                             </div>
-                            <Badge
-                              variant="outline"
-                              className={cn("gap-1.5", status?.color)}
-                            >
-                              <StatusIcon className="h-3 w-3" />
-                              {status?.label}
-                            </Badge>
+                            <div className="flex gap-2">
+                              <Badge
+                                variant="outline"
+                                className={cn("gap-1.5", status?.color)}
+                              >
+                                <StatusIcon className="h-3 w-3" />
+                                {status?.label}
+                              </Badge>
+                              <Badge className={jobStatusColors[job.jobStatus]}>
+                                {job.jobStatus}
+                              </Badge>
+                            </div>
                           </div>
                           <CardTitle className="text-lg mt-3 line-clamp-1">
                             {job.title || "Untitled Position"}

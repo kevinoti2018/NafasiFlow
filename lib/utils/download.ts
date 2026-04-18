@@ -1,8 +1,8 @@
 // lib/utils/download.ts
 export async function downloadFile(
   url: string,
-  timeoutMs: number = 30000,
-  retries: number = 2,
+  timeoutMs: number = 60000,
+  retries: number = 3,
 ): Promise<Buffer> {
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -17,10 +17,12 @@ export async function downloadFile(
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (err) {
-      lastError = err as Error;
-      console.warn(`Download attempt ${attempt} failed:`, err.message);
+      // Safely convert unknown error to Error instance
+      const error = err instanceof Error ? err : new Error(String(err));
+      lastError = error;
+      console.warn(`Download attempt ${attempt} failed:`, error.message);
       if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 2000 * attempt)); // exponential backoff
+        await new Promise((r) => setTimeout(r, 3000 * attempt)); // exponential backoff
       }
     }
   }
