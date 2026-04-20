@@ -52,7 +52,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +66,8 @@ import { useAnalysesByCV } from "@/hooks/use-analysis";
 import { cn } from "@/lib/utils";
 import { CVVersion } from "@prisma/client";
 import { GeneratePdfModal } from "@/components/cv/generate-pdf-modal";
-
+import { CVEditModal } from "@/components/cv/cv-edit-modal";
+import { CVInput } from "@/lib/ai/prompts";
 // Type for analysis results
 type AnalysisResult = {
   id: string;
@@ -380,6 +380,7 @@ export default function CVDetailPage() {
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [profileViewMode, setProfileViewMode] = useState<"ui" | "raw">("ui");
   const { data, isLoading, error } = useCV(id as string);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByCV(
     id as string,
@@ -803,6 +804,7 @@ export default function CVDetailPage() {
                       variant="ghost"
                       size="sm"
                       className="gap-2 text-slate-600 dark:text-slate-400 hover:text-[#005f78] dark:hover:text-[#4db8d4]"
+                      onClick={() => setEditModalOpen(true)}
                     >
                       <Edit3 className="h-4 w-4" />
                       Edit
@@ -1044,6 +1046,7 @@ export default function CVDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Priority Fixes */}
                 {formatIssues.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="font-semibold flex items-center gap-2 text-rose-700 dark:text-rose-400">
@@ -1075,6 +1078,41 @@ export default function CVDetailPage() {
                   </div>
                 )}
 
+                {/* Missing Important Sections */}
+                {Array.isArray(cv.missingSections) &&
+                  cv.missingSections.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                        <AlertCircle className="h-5 w-5" />
+                        Missing Important Sections
+                      </h3>
+                      <div className="space-y-2">
+                        {cv.missingSections.map(
+                          (section: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800"
+                            >
+                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400 flex items-center justify-center text-xs font-bold">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-medium text-sm text-orange-900 dark:text-orange-100 capitalize">
+                                  {section} section missing
+                                </p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">
+                                  Add your {section} details to improve
+                                  completeness and ATS ranking.
+                                </p>
+                              </div>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Content Enhancements */}
                 <div className="space-y-3">
                   <h3 className="font-semibold flex items-center gap-2 text-[#005f78] dark:text-[#4db8d4]">
                     <Sparkles className="h-5 w-5" />
@@ -1146,6 +1184,7 @@ export default function CVDetailPage() {
                   </div>
                 </div>
 
+                {/* Call to Action */}
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gradient-to-r from-[#005f78]/10 to-[#007a99]/10 dark:from-[#005f78]/20 dark:to-[#007a99]/20 rounded-xl border border-[#005f78]/20 dark:border-[#005f78]/30">
                     <div>
@@ -1273,6 +1312,23 @@ export default function CVDetailPage() {
           cvId={cv.id}
           cvName={displayName}
           cvTemplateId={cv.templateId}
+        />
+        <CVEditModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          cvId={cv.id}
+          initialData={cv.profile as CVInput}
+          cvName={displayName}
+          onRestructure={async () => {
+            // Optional: trigger re-structuring if needed
+            const res = await fetch(`/api/cv/${cv.id}/restructure`, {
+              method: "POST",
+            });
+            if (res.ok) {
+              // Refetch CV data
+              await refetch();
+            }
+          }}
         />
 
         <DeleteCVDialog

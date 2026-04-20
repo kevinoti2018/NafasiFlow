@@ -136,7 +136,7 @@ model CVVersion {
   lastAnalyzedAt  DateTime? // last time format/content analysis ran
 
   createdAt DateTime @default(now())
-
+  missingSections Json?
   // Relations
   applications  Application[]
   cvJobAnalyses CVJobAnalysis[]

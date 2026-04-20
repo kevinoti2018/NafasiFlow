@@ -21,7 +21,33 @@ export type CVInput = {
     description: string;
     technologies: string[];
   }>;
-  rawText?: string;
+  // New fields for richer CV data
+  contact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    github?: string;
+  };
+  certifications?: Array<{
+    name: string;
+    issuer: string;
+    date?: string;
+  }>;
+  referees?: Array<{
+    name: string;
+    position?: string;
+    company?: string;
+    email?: string;
+    phone?: string;
+  }>;
+  extracurricular?: Array<{
+    activity: string;
+    role?: string;
+    description?: string;
+  }>;
+  rawText?: string; // temporary fallback
 };
 
 export type JobInput = {
@@ -31,6 +57,7 @@ export type JobInput = {
   requirements?: string[];
   niceToHave?: string[];
 };
+
 interface StructuredJDParsed {
   normalizedTitle?: string;
   level?: string;
@@ -45,15 +72,16 @@ interface StructuredJDPainPoints {
 interface StructuredJD {
   parsed?: StructuredJDParsed;
   painPoints?: StructuredJDPainPoints;
-  [key: string]: unknown; // allow other fields from the JD analysis
+  [key: string]: unknown;
 }
+
 export type PromptFn<T = Record<string, unknown>> = (input: T) => string;
 
 // ===============================
 // VERSION & SYSTEM CONFIG
 // ===============================
 
-export const PROMPT_VERSION = "v5.4";
+export const PROMPT_VERSION = "v5.5";
 
 export const SYSTEM_PROMPT = `
 You are an elite ATS resume optimization engine with 10+ years of tech recruiting expertise.
@@ -290,7 +318,18 @@ CVInput schema:
   experience?: Array<{ role: string, company: string, duration: string, bullets: string[] }>,
   skills?: string[],
   education?: Array<{ degree: string, institution: string, year: string }>,
-  projects?: Array<{ name: string, description: string, technologies: string[] }>
+  projects?: Array<{ name: string, description: string, technologies: string[] }>,
+  contact?: {
+    name?: string,
+    email?: string,
+    phone?: string,
+    location?: string,
+    linkedin?: string,
+    github?: string
+  },
+  certifications?: Array<{ name: string, issuer: string, date?: string }>,
+  referees?: Array<{ name: string, position?: string, company?: string, email?: string, phone?: string }>,
+  extracurricular?: Array<{ activity: string, role?: string, description?: string }>
 }
 
 Rules:

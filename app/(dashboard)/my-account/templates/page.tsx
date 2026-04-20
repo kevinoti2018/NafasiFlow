@@ -1,4 +1,3 @@
-// app/(dashboard)/templates/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -34,9 +33,12 @@ import { TemplateUploadModal } from "@/components/templates/template-upload-moda
 import { DeleteTemplateDialog } from "@/components/templates/delete-template-dialog";
 import { useTemplates, useDeleteTemplate } from "@/hooks/use-templates";
 import { Template } from "@prisma/client";
+import { CVPreviewModal } from "@/components/cv/cv-preview-modal";
+
 type TemplateWithCount = Template & {
   _count?: { cvVersions: number; applications: number };
 };
+
 export default function TemplatesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -44,6 +46,8 @@ export default function TemplatesPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<Template | null>(
     null,
   );
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const { data, isLoading } = useTemplates();
   const deleteTemplate = useDeleteTemplate();
 
@@ -142,23 +146,29 @@ export default function TemplatesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() =>
-                              window.open(template.fileUrl, "_blank")
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewTemplate(template);
+                              setPreviewOpen(true);
+                            }}
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             Preview
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              window.open(template.fileUrl, "_blank")
-                            }
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              window.open(template.fileUrl, "_blank");
+                            }}
                           >
                             <Download className="mr-2 h-4 w-4" />
                             Download
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeletingTemplate(template)}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setDeletingTemplate(template);
+                            }}
                             className="text-red-600 focus:text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -198,6 +208,13 @@ export default function TemplatesPage() {
         onSuccess={() => {
           // refresh list
         }}
+      />
+
+      <CVPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        fileUrl={previewTemplate?.fileUrl || ""}
+        title={previewTemplate?.name || ""}
       />
 
       <DeleteTemplateDialog

@@ -150,7 +150,9 @@ export default function AnalysesPage() {
                 <div
                   key={analysis.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => router.push(`/analysis/${analysis.id}`)}
+                  onClick={() =>
+                    router.push(`/my-account/analysis/${analysis.id}`)
+                  }
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">

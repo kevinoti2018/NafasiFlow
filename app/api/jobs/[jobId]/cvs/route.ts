@@ -61,7 +61,7 @@ export async function GET(
             createdAt: true,
           },
         },
-        application: { select: { id: true, status: true } },
+        // application: { select: { id: true, status: true } },
       },
     }),
     db.cVJobAnalysis.count({ where }),

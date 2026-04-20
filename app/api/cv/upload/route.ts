@@ -184,6 +184,7 @@ export async function POST(req: NextRequest) {
         atsContentScore: contentAnalysis.atsContentScore,
         impactScore: contentAnalysis.impactScore,
         keywordCoverage: contentAnalysis.keywordCoverage,
+        missingSections: contentAnalysis.missingSections,
         analysisVersion: 1,
         lastAnalyzedAt: new Date(),
         uploadedToCloudinary,

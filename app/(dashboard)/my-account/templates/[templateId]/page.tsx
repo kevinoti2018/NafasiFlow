@@ -35,8 +35,9 @@ import {
   useDeleteTemplate,
 } from "@/hooks/use-templates";
 import { DeleteTemplateDialog } from "@/components/templates/delete-template-dialog";
+import { CVPreviewModal } from "@/components/cv/cv-preview-modal";
 import { CVVersion } from "@prisma/client";
-// types/application.ts or at the top of the page
+
 type ApplicationWithJob = {
   id: string;
   userId: string;
@@ -49,15 +50,13 @@ type ApplicationWithJob = {
   appliedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  // Related job (included via Prisma include)
   job: {
     id: string;
     title: string | null;
     company: string | null;
-    // add other job fields if needed (e.g., description, url)
   } | null;
-  // Optionally, other relations like cvVersion, template, etc.
 };
+
 export default function TemplateDetailPage() {
   const { templateId } = useParams();
   const router = useRouter();
@@ -68,6 +67,7 @@ export default function TemplateDetailPage() {
   const [editName, setEditName] = useState("");
   const [editIsDefault, setEditIsDefault] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const template = data?.template;
 
@@ -197,10 +197,7 @@ export default function TemplateDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() => window.open(template.fileUrl, "_blank")}
-            >
+            <Button variant="outline" onClick={() => setPreviewOpen(true)}>
               <Eye className="h-4 w-4 mr-2" />
               Preview
             </Button>
@@ -221,7 +218,7 @@ export default function TemplateDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Usage Statistics */}
+      {/* Usage Statistics (unchanged) */}
       <Card>
         <CardHeader>
           <CardTitle>Usage Statistics</CardTitle>
@@ -311,6 +308,13 @@ export default function TemplateDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Modals */}
+      <CVPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        fileUrl={template.fileUrl}
+        title={template.name}
+      />
       <DeleteTemplateDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
