@@ -379,7 +379,7 @@ export default function CVDetailPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [profileViewMode, setProfileViewMode] = useState<"ui" | "raw">("ui");
-  const { data, isLoading, error } = useCV(id as string);
+  const { data, isLoading, error, refetch } = useCV(id as string);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByCV(
@@ -410,7 +410,6 @@ export default function CVDetailPage() {
     cv.name || `CV from ${formatDistanceToNow(new Date(cv.createdAt))}`;
   const formatIssues = (cv.formatIssues as FormatIssue[]) || [];
   const hasIssues = formatIssues.length > 0;
-
   const formatScore = cv.atsFormatScore || 0;
   const contentScore = cv.atsContentScore || 0;
   const overallScore = Math.round((formatScore + contentScore) / 2);
@@ -1312,6 +1311,7 @@ export default function CVDetailPage() {
           cvId={cv.id}
           cvName={displayName}
           cvTemplateId={cv.templateId}
+          cvProfile={cv.profile} // pass the structured profile
         />
         <CVEditModal
           open={editModalOpen}

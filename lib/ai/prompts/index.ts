@@ -102,7 +102,27 @@ Mechanical Rules (STRICT):
 5. Logic Injection: Every score or transformation must include a "rationale" field explaining the decision based on JD requirements.
 6. Token Awareness: If input exceeds ~6000 tokens, prioritize the most recent experience and skills.
 `;
+export const linkedinOptimizeSectionPrompt: PromptFn<{
+  section: string;
+  content: string;
+}> = ({ section, content }) => `
+${SYSTEM_PROMPT}
 
+TASK: Optimize the following LinkedIn profile section (${section}) to be more impactful, engaging, and keyword‑rich.
+Return a JSON object with the following structure:
+
+{
+  "original": string,
+  "improved": string,
+  "score": number,        // 0-100 for this section
+  "reason": string,
+  "keywords": string[]    // suggested keywords to include
+}
+
+Section: ${section}
+Content:
+${content || "Not provided"}
+`;
 // ===============================
 // 1. MATCH PROMPT (Context-Aware)
 // ===============================
@@ -162,14 +182,63 @@ export const sellPrompt: PromptFn<{
 }> = ({ cv, job, primaryChallenge, targetPersona }) => `
 ${SYSTEM_PROMPT}
 
-TASK: Rewrite CV experience using the Google XYZ formula.
+TASK: Analyze CV experience at bullet level and selectively optimize ONLY weak bullets.
+
 TARGET PERSONA: ${targetPersona || "Professional Developer"}
 SOLVING CHALLENGE: ${primaryChallenge || "General role requirements"}
 
-RULES:
-- Align "optimizedHeadline" to the specific persona.
-- Each bullet in "experienceTransformations" must bridge the gap between candidate history and the "SOLVING CHALLENGE".
-- Include competencyMapping to show explicit evidence for JD requirements.
+---
+
+CORE OBJECTIVE:
+- Diagnose ALL bullets
+- Improve ONLY low-quality bullets
+- Preserve strong bullets (minimal or no change)
+
+---
+
+BULLET ANALYSIS RULES (STRICT):
+For EACH bullet:
+- Extract action verb (first word)
+- Detect:
+  - hasMetrics (numbers, %, $, measurable outcomes)
+  - hasTools (technologies mentioned)
+- Score (0–10):
+  - Strong verb → +2
+  - Tools → +2
+  - Metrics → +3
+  - Clarity → +3
+
+CLASSIFY:
+- 0–3 → "weak"
+- 4–6 → "average"
+- 7–10 → "strong"
+
+Identify issues:
+["weak_verb", "no_metrics", "no_tools", "vague", "too_short"]
+
+Provide rationale.
+
+---
+
+SELECTIVE REWRITE RULES:
+- ONLY rewrite bullets with score ≤ 5
+- DO NOT modify strong bullets (score ≥ 7)
+- For average bullets (4–6), allow light refinement only if obvious
+
+---
+
+REWRITING RULES:
+- Format:
+  Action Verb + Task + Tools + Impact
+- Use strong verbs (avoid: Responsible, Helped, Worked)
+- DO NOT invent metrics
+- Use placeholders if needed:
+  "[X]%", "[quantifiable impact]", "improving efficiency"
+- Include tools ONLY if present or clearly implied
+- Avoid repeating verbs across rewritten bullets
+- Max 20 words
+
+---
 
 OUTPUT SCHEMA:
 {
@@ -187,7 +256,25 @@ OUTPUT SCHEMA:
     {
       "role": string,
       "originalBullets": string[],
-      "optimizedBullets": string[],
+      "bulletAnalysis": [
+        {
+          "original": string,
+          "verb": string,
+          "hasMetrics": boolean,
+          "hasTools": boolean,
+          "score": number,
+          "classification": "weak" | "average" | "strong",
+          "issues": string[],
+          "rationale": string
+        }
+      ],
+      "optimizedBullets": [
+        {
+          "original": string,
+          "optimized": string,
+          "changed": boolean
+        }
+      ],
       "injectedKeywords": string[]
     }
   ],
@@ -198,13 +285,20 @@ OUTPUT SCHEMA:
       "relevance": "direct" | "transferable" | "implied"
     }
   ],
-  "meta": { "version": "${PROMPT_VERSION}" }
+  "meta": { "version": "v6.1-selective" }
 }
+
+---
+
+CRITICAL:
+- If bullet score ≥ 7 → optimized = original, changed = false
+- If bullet score ≤ 5 → MUST rewrite, changed = true
+
+---
 
 CV: ${JSON.stringify(cv)}
 JOB: ${JSON.stringify(job)}
 `;
-
 // ===============================
 // 3. OPTIMIZE PROMPT (Readability & Structure)
 // ===============================
@@ -343,6 +437,71 @@ ${rawText.slice(0, 8000)}
 `;
 
 // ===============================
+// 6. LINKEDIN PROFILE OPTIMIZATION PROMPT
+// ===============================
+
+export const linkedinOptimizeStructuredPrompt: PromptFn<{
+  headline: string;
+  about: string;
+  experience: string;
+  skills: string;
+  certifications: string;
+  education: string;
+  volunteering: string;
+}> = ({
+  headline,
+  about,
+  experience,
+  skills,
+  certifications,
+  education,
+  volunteering,
+}) => `
+${SYSTEM_PROMPT}
+
+TASK: Analyze the LinkedIn profile sections below and provide optimization suggestions.
+Return a JSON object with the following structure:
+
+{
+  "score": number,
+  "suggestions": [
+    {
+      "section": "headline" | "about" | "experience" | "skills" | "certifications" | "education" | "volunteering",
+      "original": string,
+      "improved": string,
+      "reason": string
+    }
+  ],
+  "missingSections": string[],
+  "keywordGaps": string[],
+  "actionableTips": string[]
+}
+
+Profile sections:
+
+HEADLINE:
+${headline || "Not provided"}
+
+ABOUT:
+${about || "Not provided"}
+
+EXPERIENCE:
+${experience || "Not provided"}
+
+SKILLS:
+${skills || "Not provided"}
+
+CERTIFICATIONS:
+${certifications || "Not provided"}
+
+EDUCATION:
+${education || "Not provided"}
+
+VOLUNTEERING:
+${volunteering || "Not provided"}
+`;
+
+// ===============================
 // REGISTRY
 // ===============================
 
@@ -352,6 +511,8 @@ export const prompts = {
   optimize: optimizePrompt,
   jd: jdPrompt,
   cvStructure: cvStructurePrompt,
+  linkedinOptimizeStructured: linkedinOptimizeStructuredPrompt,
+  linkedinOptimizeSection: linkedinOptimizeSectionPrompt,
 };
 
 export type PromptType = keyof typeof prompts | "custom";

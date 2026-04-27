@@ -23,7 +23,6 @@ export const RegisterForm = () => {
     password: "",
   });
 
-  // Handle OAuth Errors from URL (e.g., Google login fails)
   useEffect(() => {
     if (urlError) {
       let message = "An error occurred during registration.";
@@ -45,7 +44,6 @@ export const RegisterForm = () => {
         description:
           data?.message || "Check your inbox for the activation link.",
       });
-      // Redirecting to the verify-request page we just built
       router.push(
         `/auth/verify-request?email=${encodeURIComponent(variables.email)}`,
       );
@@ -72,33 +70,33 @@ export const RegisterForm = () => {
   };
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       {/* Social Provider */}
       <button
         type="button"
         disabled={isPending}
         onClick={() => signIn("google")}
-        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161b1d] text-sm font-semibold transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50"
       >
-        <FcGoogle className="text-2xl" />
+        <FcGoogle className="text-xl" />
         Enroll with Google
       </button>
 
       <div className="relative flex items-center justify-center">
         <div className="w-full border-t border-slate-100 dark:border-slate-800" />
-        <span className="absolute bg-white dark:bg-slate-950 px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase italic">
+        <span className="absolute bg-white dark:bg-[#1c2225] px-4 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
           Direct Enrollment
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="ml-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               First Name
             </label>
             <input
-              className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+              className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
               placeholder="Kevin"
               disabled={isPending}
               onChange={(e) =>
@@ -106,12 +104,12 @@ export const RegisterForm = () => {
               }
             />
           </div>
-          <div className="space-y-2">
-            <label className="ml-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Last Name
             </label>
             <input
-              className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+              className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
               placeholder="Otieno"
               disabled={isPending}
               onChange={(e) =>
@@ -121,13 +119,13 @@ export const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="ml-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Email Address
           </label>
           <input
             type="email"
-            className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
             placeholder="you@engine.com"
             disabled={isPending}
             onChange={(e) =>
@@ -136,13 +134,13 @@ export const RegisterForm = () => {
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="ml-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Create Password
           </label>
           <input
             type="password"
-            className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
             placeholder="••••••••"
             disabled={isPending}
             onChange={(e) =>
@@ -154,22 +152,22 @@ export const RegisterForm = () => {
         <button
           type="submit"
           disabled={isPending}
-          className="flex h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 text-sm font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-[#005f78] text-sm font-semibold text-white shadow-lg shadow-[#005f78]/20 transition-all hover:bg-[#004a5e] active:scale-[0.98] disabled:opacity-50"
         >
           {isPending ? (
-            <ImSpinner2 className="animate-spin text-xl" />
+            <ImSpinner2 className="animate-spin text-lg" />
           ) : (
             "Initialize Evolution"
           )}
         </button>
       </form>
 
-      <div className="mt-8 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
-        <p className="text-xs font-bold tracking-tight text-slate-400 uppercase">
+      <div className="mt-6 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Already a member?{" "}
           <Link
             href="/login"
-            className="text-emerald-600 hover:text-emerald-500 transition-all underline underline-offset-4 decoration-emerald-500/20"
+            className="font-semibold text-[#005f78] hover:text-[#004a5e] dark:text-[#4db8d4] transition-colors"
           >
             Access Session
           </Link>

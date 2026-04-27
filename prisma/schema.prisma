@@ -43,6 +43,7 @@ model User {
   emailLogs         EmailLog[]
   passwordHistories PasswordHistory[]
   cvJobAnalyses     CVJobAnalysis[]
+  linkedInProfiles  LinkedInProfile[]
 
   @@index([isActive])
 }
@@ -135,11 +136,11 @@ model CVVersion {
   analysisVersion Int       @default(1) // increment when re-analyzed
   lastAnalyzedAt  DateTime? // last time format/content analysis ran
 
-  createdAt DateTime @default(now())
+  createdAt       DateTime        @default(now())
   missingSections Json?
   // Relations
-  applications  Application[]
-  cvJobAnalyses CVJobAnalysis[]
+  applications    Application[]
+  cvJobAnalyses   CVJobAnalysis[]
 
   @@index([userId, createdAt])
   @@index([templateId])
@@ -266,9 +267,9 @@ model Application {
   aiInsightsSnapshot Json
 
   // Future-proofing AI evolution
-  analysisVersion Int? @default(1)
-  analysisId String? @db.ObjectId
-  status ApplicationStatus
+  analysisVersion Int?              @default(1)
+  analysisId      String?           @db.ObjectId
+  status          ApplicationStatus
 
   appliedAt DateTime?
   updatedAt DateTime  @updatedAt
@@ -382,7 +383,7 @@ model CVJobAnalysis {
   verdict    String? // "proceed", "consider", "high_risk"
 
   // Optional link to an application (one-to-one)
-  applicationId String?      @db.ObjectId
+  applicationId String? @db.ObjectId
 
   analysisVersion Int @default(1)
 
@@ -393,4 +394,30 @@ model CVJobAnalysis {
   @@index([userId, matchScore])
   @@index([jobId])
   @@index([rankSignal])
+}
+
+model LinkedInProfile {
+  id       String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String            @db.ObjectId
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name     String?
+  version  Int               @default(1)
+  parentId String?           @db.ObjectId
+  parent   LinkedInProfile?  @relation("LinkedInLineage", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children LinkedInProfile[] @relation("LinkedInLineage")
+
+  headline       String?
+  about          String?
+  experience     String?
+  skills         String?
+  certifications String?
+  education      String?
+  volunteering   String?
+
+  analysisResult Json? // store AI suggestions as JSON
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([parentId])
 }

@@ -172,7 +172,7 @@ export default function JobsPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
       {/* Header */}
-      <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-[#161b1d]/80 border-b border-slate-200/50 dark:border-slate-800/50">
+      <div className="sticky top-16 z-30 bg-white/95 dark:bg-[#161b1d]/95 border-b border-slate-200/50 dark:border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
             <div className="flex items-center gap-4">

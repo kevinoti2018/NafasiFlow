@@ -8,6 +8,7 @@ import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
 import os from "os";
 import { uploadToCloudinary } from "@/lib/utils/cloudinary";
+import { analyzeTemplate } from "@/lib/template/section-analyzer";
 
 export async function GET(req: NextRequest) {
   const session = await getCurrentUser();
@@ -90,18 +91,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Only allow DOCX files for templates
   const allowedTypes = [
-    "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
   if (!allowedTypes.includes(file.type)) {
     return NextResponse.json(
-      { error: "Only PDF or DOCX files allowed" },
+      { error: "Only DOCX files are allowed for templates" },
       { status: 400 },
     );
   }
 
-  const templateType = file.type === "application/pdf" ? "pdf" : "docx";
+  const templateType = "docx"; // only docx
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
@@ -119,16 +120,18 @@ export async function POST(req: NextRequest) {
     await unlink(tempPath).catch(() => {});
   }
 
+  // Analyze the DOCX template to find sections
+  const { foundSections, missingSections, rawText } =
+    await analyzeTemplate(buffer);
+
   // If setting as default, unset other defaults for the same scope
   if (isDefault) {
     if (isSystem) {
-      // Unset other system defaults
       await db.template.updateMany({
         where: { isSystem: true, isDefault: true },
         data: { isDefault: false },
       });
     } else {
-      // Unset user's other defaults
       await db.template.updateMany({
         where: { userId: session.id, isDefault: true },
         data: { isDefault: false },
@@ -136,8 +139,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Build data object conditionally omitting userId for system templates
-  // Build the data object without userId for system templates
+  // Build data object
   const data = {
     name,
     fileUrl: cloudinaryResult.secure_url,
@@ -149,12 +151,15 @@ export async function POST(req: NextRequest) {
       version: cloudinaryResult.version,
       format: cloudinaryResult.format,
       size: cloudinaryResult.bytes,
+      foundSections,
+      missingSections,
+      rawText,
     },
     ...(isSystem ? {} : { userId: session.id }),
   };
 
   // @ts-ignore – Prisma type mismatch; data is correct for the database
-  const template = await db.template.create({ data: data });
+  const template = await db.template.create({ data });
 
   return NextResponse.json({ template }, { status: 201 });
 }
