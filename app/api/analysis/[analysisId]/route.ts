@@ -71,7 +71,7 @@ export async function DELETE(
 
   const analysis = await db.cVJobAnalysis.findFirst({
     where: { id: validatedParams.analysisId, userId: session.id },
-    include: { application: true },
+    // include: { application: true },
   });
 
   if (!analysis) {
