@@ -805,8 +805,8 @@ export default function AnalysisDetailPage() {
                           No Critical Gaps
                         </h3>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-1 px-4">
-                          Great job! The AI didn't identify any major gaps in
-                          your profile for this role.
+                          Great job! The AI didn `&apos;`t identify any major
+                          gaps in your profile for this role.
                         </p>
                       </div>
                     )}
@@ -943,7 +943,9 @@ export default function AnalysisDetailPage() {
                           <div className="p-3 sm:p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                             <Quote className="h-4 w-4 sm:h-5 sm:w-5 text-[#005f78] dark:text-[#4db8d4] mb-2" />
                             <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 italic leading-relaxed">
-                              "{sellData.profileOptimization.elevatorPitch}"
+                              `&apos;`
+                              {sellData.profileOptimization.elevatorPitch}{" "}
+                              `&apos;`
                             </p>
                           </div>
                         </div>
@@ -1152,8 +1154,8 @@ function AnalysisNotFound() {
           Analysis Not Found
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-          The analysis you're looking for doesn't exist or you don't have access
-          to it.
+          The analysis you `&apos;`re looking for doesn `&apos;`t exist or you
+          don `&apos;`t have access to it.
         </p>
         <Button
           className="mt-4 sm:mt-6 gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"

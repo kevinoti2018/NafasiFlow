@@ -29,7 +29,6 @@ import {
   History,
   Clock,
   Edit,
-  Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,6 +38,44 @@ import {
   useDeleteLinkedInProfile,
 } from "@/hooks/use-linkedin";
 import { cn } from "@/lib/utils";
+
+// Types for the profile data
+interface LinkedInProfileData {
+  id: string;
+  name: string | null;
+  version: number;
+  createdAt: string;
+  headline: string | null;
+  about: string | null;
+  experience: string | null;
+  skills: string | null;
+  certifications: string | null;
+  education: string | null;
+  volunteering: string | null;
+  analysisResult?: OptimizationResult | null;
+}
+
+interface SuggestionItem {
+  section: string;
+  original: string;
+  improved: string;
+  reason: string;
+}
+
+interface OptimizationResult {
+  score: number;
+  suggestions: SuggestionItem[];
+  missingSections: string[];
+  keywordGaps: string[];
+  actionableTips: string[];
+}
+
+interface VersionItem {
+  id: string;
+  name: string | null;
+  version: number;
+  createdAt: string;
+}
 
 // Memoized SectionCard to prevent re-renders
 const SectionCard = memo(
@@ -145,7 +182,7 @@ export default function LinkedInProfileDetailPage() {
   const [optimizingSection, setOptimizingSection] = useState<string | null>(
     null,
   );
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<OptimizationResult | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     headline: "",
@@ -162,7 +199,8 @@ export default function LinkedInProfileDetailPage() {
   const optimizeMutation = useOptimizeLinkedIn();
   const deleteMutation = useDeleteLinkedInProfile();
 
-  const profile = data?.profile;
+  const profile = data?.profile as LinkedInProfileData | undefined;
+  const versions = (versionsData?.versions as VersionItem[]) || [];
 
   useEffect(() => {
     if (profile) {
@@ -188,12 +226,16 @@ export default function LinkedInProfileDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error("Failed to update");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to update");
+      }
       await refetch();
       setIsEditing(false);
       toast.success("Profile updated");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update";
+      toast.error(message);
     }
   };
 
@@ -201,7 +243,9 @@ export default function LinkedInProfileDetailPage() {
     if (!profile) return;
     setAnalyzing(true);
     try {
-      const optResult = await optimizeMutation.mutateAsync(formData);
+      const optResult = (await optimizeMutation.mutateAsync(
+        formData,
+      )) as OptimizationResult;
       setResult(optResult);
       await fetch(`/api/linkedin/profile/${profile.id}`, {
         method: "PATCH",
@@ -209,7 +253,7 @@ export default function LinkedInProfileDetailPage() {
         body: JSON.stringify({ analysisResult: optResult }),
       });
       const expSuggestion = optResult.suggestions?.find(
-        (s: any) => s.section === "experience",
+        (s: SuggestionItem) => s.section === "experience",
       );
       if (expSuggestion && expSuggestion.improved) {
         setFormData((prev) => ({
@@ -221,8 +265,10 @@ export default function LinkedInProfileDetailPage() {
         toast.success("Analysis complete");
       }
       await refetch();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Optimization failed";
+      toast.error(message);
     } finally {
       setAnalyzing(false);
     }
@@ -245,8 +291,10 @@ export default function LinkedInProfileDetailPage() {
         } else {
           toast.info("No improvement suggested");
         }
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Optimization failed";
+        toast.error(message);
       } finally {
         setOptimizingSection(null);
       }
@@ -256,7 +304,7 @@ export default function LinkedInProfileDetailPage() {
 
   const handleDelete = async () => {
     if (!profile) return;
-    if (confirm("Delete this profile? This action cannot be undone.")) {
+    if (window.confirm("Delete this profile? This action cannot be undone.")) {
       await deleteMutation.mutateAsync(profile.id);
       router.push("/my-account/linkedin-optimizer");
     }
@@ -269,12 +317,19 @@ export default function LinkedInProfileDetailPage() {
       </div>
     );
   }
-  if (!profile)
+  if (!profile) {
     return (
       <div className="container mx-auto py-12 text-center">
         Profile not found
       </div>
     );
+  }
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-emerald-600";
+    if (score >= 60) return "text-amber-600";
+    return "text-rose-600";
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-5xl">
@@ -434,7 +489,7 @@ export default function LinkedInProfileDetailPage() {
           </Button>
         </div>
 
-        {/* Optimization Results (unchanged) */}
+        {/* Optimization Results */}
         {result && (
           <div className="space-y-6 mt-6">
             <Card>
@@ -442,13 +497,7 @@ export default function LinkedInProfileDetailPage() {
                 <CardTitle className="flex items-center justify-between">
                   Profile Strength Score
                   <span
-                    className={`text-3xl font-bold ${
-                      result.score >= 80
-                        ? "text-emerald-600"
-                        : result.score >= 60
-                          ? "text-amber-600"
-                          : "text-rose-600"
-                    }`}
+                    className={`text-3xl font-bold ${getScoreColor(result.score)}`}
                   >
                     {result.score}%
                   </span>
@@ -483,7 +532,7 @@ export default function LinkedInProfileDetailPage() {
                   </TabsList>
 
                   <TabsContent value="suggestions" className="space-y-4">
-                    {result.suggestions?.map((s: any, i: number) => (
+                    {result.suggestions?.map((s, i) => (
                       <div key={i} className="border rounded-lg p-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <Badge variant="outline" className="capitalize">
@@ -527,7 +576,7 @@ export default function LinkedInProfileDetailPage() {
                   <TabsContent value="missing">
                     {result.missingSections?.length ? (
                       <div className="space-y-2">
-                        {result.missingSections.map((section: string) => (
+                        {result.missingSections.map((section) => (
                           <div
                             key={section}
                             className="flex items-center gap-2 p-2 bg-amber-50 rounded"
@@ -547,7 +596,7 @@ export default function LinkedInProfileDetailPage() {
                   <TabsContent value="keywords">
                     {result.keywordGaps?.length ? (
                       <div className="flex flex-wrap gap-2">
-                        {result.keywordGaps.map((kw: string) => (
+                        {result.keywordGaps.map((kw) => (
                           <Badge key={kw} variant="secondary">
                             {kw}
                           </Badge>
@@ -562,7 +611,7 @@ export default function LinkedInProfileDetailPage() {
 
                   <TabsContent value="tips">
                     <ul className="space-y-2">
-                      {result.actionableTips?.map((tip: string, i: number) => (
+                      {result.actionableTips?.map((tip, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
                           <span>{tip}</span>
@@ -575,7 +624,7 @@ export default function LinkedInProfileDetailPage() {
             </Card>
 
             {/* Version History Timeline */}
-            {versionsData?.versions && versionsData.versions.length > 1 && (
+            {versions.length > 1 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -588,7 +637,7 @@ export default function LinkedInProfileDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {versionsData.versions.map((v: any) => (
+                    {versions.map((v) => (
                       <div
                         key={v.id}
                         className={cn(

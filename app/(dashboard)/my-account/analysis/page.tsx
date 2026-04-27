@@ -41,6 +41,25 @@ import { useAllAnalyses } from "@/hooks/use-analysis";
 
 type VerdictType = "proceed" | "consider" | "high_risk";
 
+// Define the shape of an analysis item returned by the API
+interface AnalysisItem {
+  id: string;
+  matchScore: number;
+  verdict: VerdictType;
+  createdAt: string;
+  job: {
+    title: string | null;
+    company: string | null;
+  } | null;
+  cvVersion: {
+    name: string | null;
+  } | null;
+  application: {
+    id: string;
+    status: string;
+  } | null;
+}
+
 const verdictConfig: Record<
   VerdictType | "all",
   {
@@ -99,7 +118,7 @@ export default function AnalysesPage() {
     verdict: verdictFilter !== "all" ? verdictFilter : undefined,
   });
 
-  const analyses = data?.analyses || [];
+  const analyses = (data?.analyses as AnalysisItem[]) || [];
   const pagination = data?.pagination;
 
   const handlePageChange = (newPage: number) => {
@@ -130,7 +149,7 @@ export default function AnalysesPage() {
                   All Analyses
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Every CV-Job comparison you`&lsquo;`ve run
+                  Every CV-Job comparison you&lsquo;ve run
                 </p>
               </div>
             </div>
@@ -287,8 +306,8 @@ export default function AnalysesPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {analyses.map((analysis: any) => {
-                  const verdict = analysis.verdict as VerdictType;
+                {analyses.map((analysis) => {
+                  const verdict = analysis.verdict;
                   const config = verdictConfig[verdict];
                   const VerdictIcon = config.icon;
 

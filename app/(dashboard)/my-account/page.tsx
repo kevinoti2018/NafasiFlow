@@ -34,6 +34,30 @@ import { Progress } from "@/components/ui/progress";
 import { useDashboardStats } from "@/hooks/use-dashboard";
 import { cn } from "@/lib/utils";
 
+// Types based on API response
+interface TopCV {
+  id: string;
+  name: string | null;
+  atsFormatScore: number | null;
+  atsContentScore: number | null;
+}
+
+interface RecentAnalysis {
+  id: string;
+  matchScore: number;
+  createdAt: string;
+  job: { title: string | null; company: string | null };
+  cvVersion: { name: string | null };
+}
+
+interface RecentApplication {
+  id: string;
+  status: string;
+  createdAt: string;
+  job: { title: string | null; company: string | null };
+  cvVersion: { name: string | null };
+}
+
 const STATUS_STYLES: Record<string, string> = {
   saved:
     "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
@@ -47,8 +71,10 @@ const STATUS_STYLES: Record<string, string> = {
     "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300",
 };
 
-const scoreColor = (s: number) =>
-  s >= 80 ? "#005f78" : s >= 60 ? "#f59e0b" : "#f43f5e";
+const getScoreColor = (score: number | null | undefined): string => {
+  const s = score ?? 0;
+  return s >= 80 ? "#005f78" : s >= 60 ? "#f59e0b" : "#f43f5e";
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -57,9 +83,10 @@ export default function DashboardPage() {
   if (isLoading) return <DashboardSkeleton />;
 
   const stats = data;
-  const recentAnalyses = stats?.recent?.analyses || [];
-  const recentApplications = stats?.recent?.applications || [];
-  const topCVs = stats?.topCVs || [];
+  const recentAnalyses = (stats?.recent?.analyses as RecentAnalysis[]) || [];
+  const recentApplications =
+    (stats?.recent?.applications as RecentApplication[]) || [];
+  const topCVs = (stats?.topCVs as TopCV[]) || [];
 
   const kpis = [
     {
@@ -163,7 +190,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topCVs.map((cv: any, idx: number) => (
+              {topCVs.map((cv, idx) => (
                 <Card
                   key={idx}
                   className="group cursor-pointer border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all bg-white dark:bg-[#161b1d] hover:border-[#005f78]/30 dark:hover:border-[#005f78]/30"
@@ -181,8 +208,8 @@ export default function DashboardPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
-                    <ScoreBar label="Format" value={cv.atsFormatScore} />
-                    <ScoreBar label="Content" value={cv.atsContentScore} />
+                    <ScoreBar label="Format" value={cv.atsFormatScore ?? 0} />
+                    <ScoreBar label="Content" value={cv.atsContentScore ?? 0} />
                   </CardContent>
                 </Card>
               ))}
@@ -220,7 +247,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {recentAnalyses.map((a: any) => {
+                    {recentAnalyses.map((a) => {
                       const score = a.matchScore || 0;
                       return (
                         <li key={a.id}>
@@ -309,7 +336,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {recentApplications.map((app: any) => (
+                    {recentApplications.map((app) => (
                       <li key={app.id}>
                         <button
                           onClick={() =>
@@ -425,7 +452,7 @@ export default function DashboardPage() {
 }
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
-  const color = scoreColor(value);
+  const color = getScoreColor(value);
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">

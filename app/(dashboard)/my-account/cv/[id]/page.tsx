@@ -1,6 +1,6 @@
 // app/(dashboard)/cv/[id]/page.tsx
 "use client";
-
+import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -27,18 +27,11 @@ import {
   MoreHorizontal,
   FileSearch,
   Edit3,
-  User,
-  Mail,
-  Phone,
-  MapPin,
   Building,
   GraduationCap,
   Wrench,
-  Code,
   Eye,
   Code2,
-  ToggleLeft,
-  ToggleRight,
 } from "lucide-react";
 import {
   Card,
@@ -68,6 +61,7 @@ import { CVVersion } from "@prisma/client";
 import { GeneratePdfModal } from "@/components/cv/generate-pdf-modal";
 import { CVEditModal } from "@/components/cv/cv-edit-modal";
 import { CVInput } from "@/lib/ai/prompts";
+
 // Type for analysis results
 type AnalysisResult = {
   id: string;
@@ -180,12 +174,17 @@ function StatCard({
   );
 }
 
-// Profile UI View Component
-// Profile UI View Component - Updated to handle actual data structure
-function ProfileUIView({ profile }: { profile: any }) {
+// Profile UI View Component (fully typed without any)
+function ProfileUIView({ profile }: { profile: CVInput }) {
   if (!profile) return null;
 
-  const sections = [
+  const sections: Array<{
+    key: string;
+    title: string;
+    icon: React.ElementType;
+    render: () => React.ReactNode | null; // Changed from JSX.Element
+    condition: boolean;
+  }> = [
     {
       key: "summary",
       title: "Professional Summary",
@@ -203,7 +202,7 @@ function ProfileUIView({ profile }: { profile: any }) {
       icon: Briefcase,
       render: () => (
         <div className="space-y-4">
-          {profile.experience?.map((exp: any, idx: number) => (
+          {profile.experience?.map((exp, idx) => (
             <div key={idx} className="border-l-2 border-[#005f78]/30 pl-4 py-1">
               <div className="flex items-center gap-2 mb-1">
                 <Building className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
@@ -219,7 +218,7 @@ function ProfileUIView({ profile }: { profile: any }) {
               </p>
               {exp.bullets && exp.bullets.length > 0 && (
                 <ul className="space-y-1">
-                  {exp.bullets.map((bullet: string, bIdx: number) => (
+                  {exp.bullets.map((bullet, bIdx) => (
                     <li
                       key={bIdx}
                       className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2"
@@ -236,7 +235,7 @@ function ProfileUIView({ profile }: { profile: any }) {
           ))}
         </div>
       ),
-      condition: profile.experience && profile.experience.length > 0,
+      condition: !!profile.experience?.length,
     },
     {
       key: "education",
@@ -244,7 +243,7 @@ function ProfileUIView({ profile }: { profile: any }) {
       icon: GraduationCap,
       render: () => (
         <div className="space-y-3">
-          {profile.education?.map((edu: any, idx: number) => (
+          {profile.education?.map((edu, idx) => (
             <div key={idx} className="flex items-start gap-3">
               <GraduationCap className="h-4 w-4 text-slate-400 mt-0.5" />
               <div>
@@ -262,7 +261,7 @@ function ProfileUIView({ profile }: { profile: any }) {
           ))}
         </div>
       ),
-      condition: profile.education && profile.education.length > 0,
+      condition: !!profile.education?.length,
     },
     {
       key: "skills",
@@ -270,7 +269,7 @@ function ProfileUIView({ profile }: { profile: any }) {
       icon: Wrench,
       render: () => (
         <div className="flex flex-wrap gap-2">
-          {profile.skills?.map((skill: string, idx: number) => (
+          {profile.skills?.map((skill, idx) => (
             <Badge
               key={idx}
               variant="secondary"
@@ -281,7 +280,7 @@ function ProfileUIView({ profile }: { profile: any }) {
           ))}
         </div>
       ),
-      condition: profile.skills && profile.skills.length > 0,
+      condition: !!profile.skills?.length,
     },
   ];
 
@@ -289,7 +288,6 @@ function ProfileUIView({ profile }: { profile: any }) {
     <div className="space-y-6">
       {sections.map((section) => {
         if (!section.condition) return null;
-
         const Icon = section.icon;
         return (
           <div
@@ -419,6 +417,11 @@ export default function CVDetailPage() {
 
   const analysisList = (analyses?.analyses as AnalysisResult[]) || [];
 
+  // Safely get missing sections
+  const missingSections = Array.isArray(cv.missingSections)
+    ? (cv.missingSections as string[])
+    : [];
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
       <div className="container mx-auto py-4 sm:py-8 px-3 sm:px-6 lg:px-8 max-w-7xl space-y-6 sm:space-y-8">
@@ -439,7 +442,7 @@ export default function CVDetailPage() {
           </span>
         </nav>
 
-        {/* Header Section */}
+        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 sm:gap-6">
           <div className="space-y-2 flex-1">
             <div className="flex items-start gap-3 flex-wrap">
@@ -533,7 +536,7 @@ export default function CVDetailPage() {
                   className="gap-2 text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
                 >
                   <FileText className="h-4 w-4" />
-                  Generate PDF
+                  Generate Document
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleReanalyze}
@@ -578,7 +581,7 @@ export default function CVDetailPage() {
           </div>
         </div>
 
-        {/* Score Overview Card */}
+        {/* Score Card */}
         <Card
           className={cn(
             "overflow-hidden border-0 shadow-lg",
@@ -763,6 +766,7 @@ export default function CVDetailPage() {
             </TabsList>
           </div>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4 mt-2">
             <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1c2225]">
               <CardHeader className="pb-3">
@@ -813,7 +817,7 @@ export default function CVDetailPage() {
               </CardHeader>
               <CardContent>
                 {profileViewMode === "ui" ? (
-                  <ProfileUIView profile={cv.profile} />
+                  <ProfileUIView profile={cv.profile as CVInput} />
                 ) : (
                   <div className="bg-slate-950 rounded-lg p-4 overflow-auto max-h-[500px]">
                     <pre className="text-xs sm:text-sm font-mono text-slate-50 leading-relaxed">
@@ -825,6 +829,7 @@ export default function CVDetailPage() {
             </Card>
           </TabsContent>
 
+          {/* Format Tab */}
           <TabsContent value="format" className="space-y-4 mt-2">
             <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1c2225]">
               <CardHeader>
@@ -928,6 +933,7 @@ export default function CVDetailPage() {
             </Card>
           </TabsContent>
 
+          {/* Jobs (Matches) Tab */}
           <TabsContent value="jobs" className="space-y-4 mt-2">
             {analysesLoading ? (
               <div className="space-y-3">
@@ -992,9 +998,7 @@ export default function CVDetailPage() {
                             className="gap-2 self-start sm:self-center opacity-0 group-hover:opacity-100 transition-opacity text-[#005f78] dark:text-[#4db8d4] hover:bg-[#005f78]/10 dark:hover:bg-[#005f78]/10"
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(
-                                `/my-account/analysis/${analysis.id}`,
-                              );
+                              router.push(`/analysis/${analysis.id}`);
                             }}
                           >
                             View Analysis
@@ -1033,6 +1037,7 @@ export default function CVDetailPage() {
             )}
           </TabsContent>
 
+          {/* Recommendations Tab */}
           <TabsContent value="recommendations" className="space-y-4 mt-2">
             <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1c2225]">
               <CardHeader>
@@ -1078,38 +1083,35 @@ export default function CVDetailPage() {
                 )}
 
                 {/* Missing Important Sections */}
-                {Array.isArray(cv.missingSections) &&
-                  cv.missingSections.length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-400">
-                        <AlertCircle className="h-5 w-5" />
-                        Missing Important Sections
-                      </h3>
-                      <div className="space-y-2">
-                        {cv.missingSections.map(
-                          (section: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800"
-                            >
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400 flex items-center justify-center text-xs font-bold">
-                                {idx + 1}
-                              </span>
-                              <div>
-                                <p className="font-medium text-sm text-orange-900 dark:text-orange-100 capitalize">
-                                  {section} section missing
-                                </p>
-                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">
-                                  Add your {section} details to improve
-                                  completeness and ATS ranking.
-                                </p>
-                              </div>
-                            </div>
-                          ),
-                        )}
-                      </div>
+                {missingSections.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                      <AlertCircle className="h-5 w-5" />
+                      Missing Important Sections
+                    </h3>
+                    <div className="space-y-2">
+                      {missingSections.map((section: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800"
+                        >
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-200 dark:bg-orange-900 text-orange-700 dark:text-orange-400 flex items-center justify-center text-xs font-bold">
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm text-orange-900 dark:text-orange-100 capitalize">
+                              {section} section missing
+                            </p>
+                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">
+                              Add your {section} details to improve completeness
+                              and ATS ranking.
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {/* Content Enhancements */}
                 <div className="space-y-3">
@@ -1118,7 +1120,6 @@ export default function CVDetailPage() {
                     Content Enhancements
                   </h3>
                   <div className="grid gap-2">
-                    {/* Low content score warning */}
                     {cv.atsContentScore !== null && cv.atsContentScore < 70 && (
                       <div className="flex items-start gap-3 p-3 bg-[#005f78]/5 dark:bg-[#005f78]/10 rounded-lg border border-[#005f78]/20 dark:border-[#005f78]/30">
                         <TrendingUp className="h-5 w-5 text-[#005f78] dark:text-[#4db8d4] flex-shrink-0 mt-0.5" />
@@ -1133,7 +1134,6 @@ export default function CVDetailPage() {
                         </div>
                       </div>
                     )}
-                    {/* High content score positive feedback */}
                     {cv.atsContentScore !== null &&
                       cv.atsContentScore >= 70 && (
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -1149,7 +1149,6 @@ export default function CVDetailPage() {
                           </div>
                         </div>
                       )}
-                    {/* Low keyword coverage warning */}
                     {cv.keywordCoverage !== null && cv.keywordCoverage < 60 && (
                       <div className="flex items-start gap-3 p-3 bg-[#005f78]/5 dark:bg-[#005f78]/10 rounded-lg border border-[#005f78]/20 dark:border-[#005f78]/30">
                         <Target className="h-5 w-5 text-[#005f78] dark:text-[#4db8d4] flex-shrink-0 mt-0.5" />
@@ -1164,7 +1163,6 @@ export default function CVDetailPage() {
                         </div>
                       </div>
                     )}
-                    {/* High keyword coverage positive feedback */}
                     {cv.keywordCoverage !== null &&
                       cv.keywordCoverage >= 60 && (
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
@@ -1209,6 +1207,7 @@ export default function CVDetailPage() {
             </Card>
           </TabsContent>
 
+          {/* Versions Tab */}
           <TabsContent value="versions" className="space-y-4 mt-2">
             <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1c2225]">
               <CardHeader>
@@ -1311,7 +1310,7 @@ export default function CVDetailPage() {
           cvId={cv.id}
           cvName={displayName}
           cvTemplateId={cv.templateId}
-          cvProfile={cv.profile} // pass the structured profile
+          cvProfile={cv.profile}
         />
         <CVEditModal
           open={editModalOpen}
@@ -1320,12 +1319,10 @@ export default function CVDetailPage() {
           initialData={cv.profile as CVInput}
           cvName={displayName}
           onRestructure={async () => {
-            // Optional: trigger re-structuring if needed
             const res = await fetch(`/api/cv/${cv.id}/restructure`, {
               method: "POST",
             });
             if (res.ok) {
-              // Refetch CV data
               await refetch();
             }
           }}
@@ -1352,6 +1349,7 @@ export default function CVDetailPage() {
   );
 }
 
+// Skeletons and NotFound remain unchanged (kept as in original)
 function CVDetailSkeleton() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
@@ -1391,8 +1389,8 @@ function CVNotFound() {
           Document Not Found
         </h2>
         <p className="text-slate-500 dark:text-slate-400 mb-6">
-          The CV you're looking for doesn't exist or you don't have permission
-          to access it.
+          The CV you`&apos;`re looking for doesn`&apos;`t exist or you
+          don`&apos;`t have permission to access it.
         </p>
         <Button
           onClick={() => (window.location.href = "/my-account/cv")}

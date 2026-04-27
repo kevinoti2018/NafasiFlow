@@ -39,6 +39,87 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const PASSWORD_MIN_LENGTH = 8;
 
+// PasswordFields component – defined outside to avoid re-creation on every render
+const PasswordFields = ({
+  showCurrent = false,
+  currentPassword,
+  onCurrentPasswordChange,
+  newPassword,
+  onNewPasswordChange,
+  confirmPassword,
+  onConfirmPasswordChange,
+  showPassword,
+  onToggleShowPassword,
+}: {
+  showCurrent?: boolean;
+  currentPassword?: string;
+  onCurrentPasswordChange?: (value: string) => void;
+  newPassword: string;
+  onNewPasswordChange: (value: string) => void;
+  confirmPassword: string;
+  onConfirmPasswordChange: (value: string) => void;
+  showPassword: boolean;
+  onToggleShowPassword: () => void;
+}) => (
+  <div className="space-y-4">
+    {showCurrent && (
+      <div className="space-y-2">
+        <Label htmlFor="currentPassword" className="text-sm font-medium">
+          Current Password
+        </Label>
+        <div className="relative">
+          <Input
+            id="currentPassword"
+            type={showPassword ? "text" : "password"}
+            value={currentPassword || ""}
+            onChange={(e) => onCurrentPasswordChange?.(e.target.value)}
+            className="pr-10"
+            placeholder="Enter your current password"
+          />
+        </div>
+      </div>
+    )}
+    <div className="space-y-2">
+      <Label htmlFor="newPassword" className="text-sm font-medium">
+        New Password
+      </Label>
+      <div className="relative">
+        <Input
+          id="newPassword"
+          type={showPassword ? "text" : "password"}
+          value={newPassword}
+          onChange={(e) => onNewPasswordChange(e.target.value)}
+          className="pr-10"
+          placeholder="Min. 8 characters"
+        />
+        <button
+          type="button"
+          onClick={onToggleShowPassword}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {showPassword ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </div>
+    <div className="space-y-2">
+      <Label htmlFor="confirmPassword" className="text-sm font-medium">
+        Confirm New Password
+      </Label>
+      <Input
+        id="confirmPassword"
+        type={showPassword ? "text" : "password"}
+        value={confirmPassword}
+        onChange={(e) => onConfirmPasswordChange(e.target.value)}
+        placeholder="Re-enter new password"
+      />
+    </div>
+  </div>
+);
+
 export default function SettingsPage() {
   const { data, isLoading } = useUserProfile();
   const updateProfile = useUpdateProfile();
@@ -61,6 +142,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (data?.user) {
+      // eslint-disable-next-line
       setProfileForm({
         firstName: data.user.firstName || "",
         lastName: data.user.lastName || "",
@@ -83,6 +165,11 @@ export default function SettingsPage() {
     return true;
   }, []);
 
+  const resetPasswordForm = useCallback(() => {
+    setPasswordForm({ newPassword: "", confirmPassword: "" });
+    setShowPassword(false);
+  }, []);
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     await updateProfile.mutateAsync(profileForm);
@@ -94,7 +181,6 @@ export default function SettingsPage() {
       !validatePassword(passwordForm.newPassword, passwordForm.confirmPassword)
     )
       return;
-
     await changePassword.mutateAsync({
       currentPassword: "",
       newPassword: passwordForm.newPassword,
@@ -108,7 +194,6 @@ export default function SettingsPage() {
       !validatePassword(passwordForm.newPassword, passwordForm.confirmPassword)
     )
       return;
-
     await changePassword.mutateAsync({
       currentPassword,
       newPassword: passwordForm.newPassword,
@@ -116,11 +201,6 @@ export default function SettingsPage() {
     resetPasswordForm();
     setCurrentPassword("");
   };
-
-  const resetPasswordForm = useCallback(() => {
-    setPasswordForm({ newPassword: "", confirmPassword: "" });
-    setShowPassword(false);
-  }, []);
 
   const handleDeleteAccount = async () => {
     await deleteAccount.mutateAsync();
@@ -141,81 +221,6 @@ export default function SettingsPage() {
   }
 
   const isPasswordSet = data?.user?.isPasswordSet;
-
-  const PasswordFields = ({
-    showCurrent = false,
-  }: {
-    showCurrent?: boolean;
-  }) => (
-    <div className="space-y-4">
-      {showCurrent && (
-        <div className="space-y-2">
-          <Label htmlFor="currentPassword" className="text-sm font-medium">
-            Current Password
-          </Label>
-          <div className="relative">
-            <Input
-              id="currentPassword"
-              type={showPassword ? "text" : "password"}
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="pr-10"
-              placeholder="Enter your current password"
-            />
-          </div>
-        </div>
-      )}
-      <div className="space-y-2">
-        <Label htmlFor="newPassword" className="text-sm font-medium">
-          New Password
-        </Label>
-        <div className="relative">
-          <Input
-            id="newPassword"
-            type={showPassword ? "text" : "password"}
-            value={passwordForm.newPassword}
-            onChange={(e) =>
-              setPasswordForm((prev) => ({
-                ...prev,
-                newPassword: e.target.value,
-              }))
-            }
-            className="pr-10"
-            placeholder="Min. 8 characters"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showPassword ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword" className="text-sm font-medium">
-          Confirm New Password
-        </Label>
-        <Input
-          id="confirmPassword"
-          type={showPassword ? "text" : "password"}
-          value={passwordForm.confirmPassword}
-          onChange={(e) =>
-            setPasswordForm((prev) => ({
-              ...prev,
-              confirmPassword: e.target.value,
-            }))
-          }
-          placeholder="Re-enter new password"
-        />
-      </div>
-    </div>
-  );
-
   const tabItems = [
     { value: "profile", label: "Profile", icon: User },
     { value: "password", label: "Password", icon: Lock },
@@ -247,7 +252,6 @@ export default function SettingsPage() {
                 <TabsList className="w-full justify-start h-auto p-0 bg-transparent gap-1 rounded-none">
                   {tabItems.map((tab) => {
                     const Icon = tab.icon;
-                    const isActive = activeTab === tab.value;
                     return (
                       <TabsTrigger
                         key={tab.value}
@@ -381,7 +385,29 @@ export default function SettingsPage() {
 
                 {isPasswordSet ? (
                   <form onSubmit={handleChangePassword} className="space-y-5">
-                    <PasswordFields showCurrent />
+                    <PasswordFields
+                      showCurrent
+                      currentPassword={currentPassword}
+                      onCurrentPasswordChange={setCurrentPassword}
+                      newPassword={passwordForm.newPassword}
+                      onNewPasswordChange={(val) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          newPassword: val,
+                        }))
+                      }
+                      confirmPassword={passwordForm.confirmPassword}
+                      onConfirmPasswordChange={(val) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          confirmPassword: val,
+                        }))
+                      }
+                      showPassword={showPassword}
+                      onToggleShowPassword={() =>
+                        setShowPassword(!showPassword)
+                      }
+                    />
                     <div className="flex justify-end pt-2">
                       <Button
                         type="submit"
@@ -399,7 +425,26 @@ export default function SettingsPage() {
                   </form>
                 ) : (
                   <form onSubmit={handleSetPassword} className="space-y-5">
-                    <PasswordFields />
+                    <PasswordFields
+                      newPassword={passwordForm.newPassword}
+                      onNewPasswordChange={(val) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          newPassword: val,
+                        }))
+                      }
+                      confirmPassword={passwordForm.confirmPassword}
+                      onConfirmPasswordChange={(val) =>
+                        setPasswordForm((prev) => ({
+                          ...prev,
+                          confirmPassword: val,
+                        }))
+                      }
+                      showPassword={showPassword}
+                      onToggleShowPassword={() =>
+                        setShowPassword(!showPassword)
+                      }
+                    />
                     <div className="flex justify-end pt-2">
                       <Button
                         type="submit"

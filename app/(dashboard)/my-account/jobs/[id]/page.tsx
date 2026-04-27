@@ -1202,8 +1202,8 @@ function JobNotFound() {
           Position Not Found
         </h2>
         <p className="text-slate-500 dark:text-slate-400 mb-6">
-          The job you're looking for doesn't exist or you don't have access to
-          it.
+          The job you `&apos;`re looking for doesn `&apos;`t exist or you don
+          `&apos;`t have access to it.
         </p>
         <Button
           onClick={() => (window.location.href = "/my-account/jobs")}
