@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,24 +19,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Loader2,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Save,
-  Globe,
-} from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Save, Globe } from "lucide-react";
 import { toast } from "sonner";
 import {
   useLinkedInProfiles,
   useSaveLinkedInProfile,
 } from "@/hooks/use-linkedin";
 
-// Same memoized SectionCard as above (simplified for main page)
+// ========== Types ==========
+interface SectionCardProps {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  rows?: number;
+}
+
+interface LinkedInFormData {
+  name: string;
+  headline: string;
+  about: string;
+  experience: string;
+  skills: string;
+  certifications: string;
+  education: string;
+  volunteering: string;
+}
+
+// Experience item from extraction API
+interface ExtractedExperience {
+  role: string;
+  company: string;
+  duration: string;
+  description?: string;
+}
+
+// Extracted profile shape (partial)
+interface ExtractedProfile {
+  name?: string;
+  headline?: string;
+  about?: string;
+  experience?: ExtractedExperience[];
+  skills?: string[];
+}
+
+// Profile saved in DB (as returned by hooks)
+interface SavedProfile {
+  id: string;
+  name: string;
+  version: number;
+  createdAt: string;
+  // ... other fields as needed
+}
+
+// ========== Components ==========
 const SectionCard = memo(
-  ({ title, value, onChange, placeholder, rows = 4 }: any) => {
+  ({ title, value, onChange, placeholder, rows = 4 }: SectionCardProps) => {
     const [expanded, setExpanded] = useState(true);
     return (
       <Card className="border border-slate-200 dark:border-slate-800">
@@ -70,11 +108,12 @@ const SectionCard = memo(
 );
 SectionCard.displayName = "SectionCard";
 
+// ========== Main Page ==========
 export default function LinkedInOptimizerPage() {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [extracting, setExtracting] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LinkedInFormData>({
     name: "",
     headline: "",
     about: "",
@@ -84,21 +123,13 @@ export default function LinkedInOptimizerPage() {
     education: "",
     volunteering: "",
   });
-  const [expandedSections, setExpandedSections] = useState({
-    headline: true,
-    about: true,
-    experience: true,
-    skills: true,
-    certifications: false,
-    education: true,
-    volunteering: false,
-  });
 
   const { data: profilesData, isLoading: profilesLoading } =
     useLinkedInProfiles();
   const saveMutation = useSaveLinkedInProfile();
 
-  const profiles = profilesData?.profiles || [];
+  // Assume profilesData has a `profiles` array of SavedProfile
+  const profiles: SavedProfile[] = profilesData?.profiles || [];
 
   const handleExtract = async () => {
     if (!url) {
@@ -112,8 +143,11 @@ export default function LinkedInOptimizerPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = (await res.json()) as {
+        profile: ExtractedProfile;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error ?? "Extraction failed");
       const profile = data.profile;
       setFormData({
         name: profile.name || "",
@@ -122,7 +156,7 @@ export default function LinkedInOptimizerPage() {
         experience:
           profile.experience
             ?.map(
-              (exp: any) =>
+              (exp: ExtractedExperience) =>
                 `${exp.role} at ${exp.company} (${exp.duration})\n${exp.description || ""}`,
             )
             .join("\n\n") || "",
@@ -132,8 +166,10 @@ export default function LinkedInOptimizerPage() {
         volunteering: "",
       });
       toast.success("Profile extracted – review and edit sections below");
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      toast.error(errorMessage);
     } finally {
       setExtracting(false);
     }
@@ -150,15 +186,6 @@ export default function LinkedInOptimizerPage() {
     });
     const newId = result.profile.id;
     router.push(`/my-account/linkedin-optimizer/${newId}`);
-  };
-
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
   };
 
   return (
@@ -192,7 +219,7 @@ export default function LinkedInOptimizerPage() {
                     No profiles yet
                   </SelectItem>
                 ) : (
-                  profiles.map((p: any) => (
+                  profiles.map((p: SavedProfile) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name ||
                         `Version ${p.version} (${new Date(p.createdAt).toLocaleDateString()})`}
