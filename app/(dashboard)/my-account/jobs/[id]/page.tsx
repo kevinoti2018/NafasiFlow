@@ -87,72 +87,73 @@ import type { CreateJobBody } from "@/lib/validations/job";
 import { cn } from "@/lib/utils";
 import type { AnalysisResult } from "@/app/types/analysis";
 import { CVVersion } from "@prisma/client";
+import { CreateApplicationModal } from "@/components/jobs/create-application-modal";
 
-// Enhanced status configuration with executive styling
+// Refined status configuration with consistent teal theme
 const statusConfig = {
   pending: {
     label: "Analysis Pending",
     icon: Clock,
-    color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    gradient: "from-amber-500/20 to-orange-500/20",
+    color:
+      "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-500 dark:border-amber-500/30",
     pulse: true,
   },
   processing: {
     label: "AI Processing",
     icon: RefreshCw,
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    gradient: "from-blue-500/20 to-cyan-500/20",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     pulse: true,
   },
   completed: {
     label: "Analysis Complete",
     icon: CheckCircle2,
-    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    gradient: "from-emerald-500/20 to-teal-500/20",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     pulse: false,
   },
   failed: {
     label: "Analysis Failed",
     icon: XCircle,
-    color: "bg-red-500/10 text-red-600 border-red-500/20",
-    gradient: "from-red-500/20 to-rose-500/20",
+    color:
+      "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30",
     pulse: false,
   },
 };
 
 const verdictColors = {
   proceed: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-700",
-    border: "border-emerald-500/30",
+    bg: "bg-[#005f78]/10 dark:bg-[#005f78]/20",
+    text: "text-[#005f78] dark:text-[#4db8d4]",
+    border: "border-[#005f78]/30 dark:border-[#005f78]/40",
     icon: CheckCircle2,
     label: "Strong Match",
   },
   consider: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-700",
-    border: "border-amber-500/30",
+    bg: "bg-amber-500/10 dark:bg-amber-500/15",
+    text: "text-amber-700 dark:text-amber-400",
+    border: "border-amber-500/30 dark:border-amber-500/40",
     icon: AlertCircle,
     label: "Consider",
   },
   high_risk: {
-    bg: "bg-rose-500/10",
-    text: "text-rose-700",
-    border: "border-rose-500/30",
+    bg: "bg-rose-500/10 dark:bg-rose-500/15",
+    text: "text-rose-700 dark:text-rose-400",
+    border: "border-rose-500/30 dark:border-rose-500/40",
     icon: XCircle,
     label: "High Risk",
   },
 };
 
-// Executive score color scale
+// Unified score color scale using primary teal
 const getScoreColor = (score: number) => {
-  if (score >= 80) return "text-emerald-600";
-  if (score >= 60) return "text-amber-600";
-  return "text-rose-600";
+  if (score >= 80) return "text-[#005f78] dark:text-[#4db8d4]";
+  if (score >= 60) return "text-amber-600 dark:text-amber-400";
+  return "text-rose-600 dark:text-rose-400";
 };
 
 const getScoreBg = (score: number) => {
-  if (score >= 80) return "bg-emerald-500";
+  if (score >= 80) return "bg-[#005f78]";
   if (score >= 60) return "bg-amber-500";
   return "bg-rose-500";
 };
@@ -169,6 +170,7 @@ export default function JobDetailPage() {
   const [selectedCvId, setSelectedCvId] = useState<string>("");
   const [selectedJobStatus, setSelectedJobStatus] = useState<string>("open");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [applicationModalOpen, setApplicationModalOpen] = useState(false);
 
   const { data, isLoading, error } = useJob(id as string);
   const { data: analyses, isLoading: analysesLoading } = useAnalysesByJob(
@@ -185,7 +187,6 @@ export default function JobDetailPage() {
   const job = data?.job;
   const cvs = cvsData?.cvVersions || [];
 
-  // Sync job status from fetched data
   useEffect(() => {
     if (job?.jobStatus) {
       setSelectedJobStatus(job.jobStatus);
@@ -240,6 +241,7 @@ export default function JobDetailPage() {
       setIsUpdatingStatus(false);
     }
   };
+
   if (isLoading) return <JobDetailSkeleton />;
   if (error || !job) return <JobNotFound />;
 
@@ -247,7 +249,6 @@ export default function JobDetailPage() {
     statusConfig[job.analysisStatus as keyof typeof statusConfig];
   const StatusIcon = StatusConfig?.icon || Clock;
 
-  // Calculate match statistics
   const matchScores =
     analyses?.analyses?.map((a: AnalysisResult) => a.matchScore) || [];
   const avgMatchScore =
@@ -261,18 +262,17 @@ export default function JobDetailPage() {
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        {/* Executive Header with Glass Effect */}
-        <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b border-slate-200/50 dark:border-slate-800/50">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
+        {/* Refined Header */}
+        <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-[#161b1d]/80 border-b border-slate-200 dark:border-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
-              {/* Left: Navigation & Title */}
               <div className="flex items-start gap-4">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => router.push("/my-account/jobs")}
-                  className="mt-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="mt-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -302,7 +302,7 @@ export default function JobDetailPage() {
                       <Building2 className="w-4 h-4" />
                       {job.company || "Company not specified"}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-slate-300" />
+                    <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                     <span className="flex items-center gap-1.5">
                       <Clock className="w-4 h-4" />
                       Posted{" "}
@@ -314,14 +314,13 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {/* Right: Actions */}
               <div className="flex items-center gap-2">
                 {canManuallyAnalyze && allowManualRetry && (
                   <Button
                     variant="outline"
                     onClick={handleRetry}
                     disabled={retryAnalysis.isPending}
-                    className="gap-2"
+                    className="gap-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10 hover:text-[#005f78] dark:hover:text-[#4db8d4] hover:border-[#005f78]/30"
                   >
                     <RefreshCw
                       className={cn(
@@ -335,57 +334,90 @@ export default function JobDetailPage() {
                   </Button>
                 )}
 
-                {/* Job Status Selector */}
                 <Select
                   value={selectedJobStatus}
                   onValueChange={handleStatusChange}
                   disabled={isUpdatingStatus}
                 >
-                  <SelectTrigger className="w-[130px] h-9">
+                  <SelectTrigger className="w-[130px] h-9 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                  <SelectContent className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700">
+                    <SelectItem
+                      value="open"
+                      className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                    >
+                      Open
+                    </SelectItem>
+                    <SelectItem
+                      value="closed"
+                      className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                    >
+                      Closed
+                    </SelectItem>
+                    <SelectItem
+                      value="archived"
+                      className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                    >
+                      Archived
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-48 bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700"
+                  >
+                    <DropdownMenuItem
+                      onClick={() => setEditModalOpen(true)}
+                      className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                    >
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit Position
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]">
                       <Share2 className="mr-2 h-4 w-4" />
                       Share
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                     <DropdownMenuItem
                       onClick={() => setDeleteDialogOpen(true)}
-                      className="text-red-600 focus:text-red-600"
+                      className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setApplicationModalOpen(true)}
+                  className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"
+                >
+                  <Briefcase className="h-4 w-4" />
+                  Apply
+                </Button>
               </div>
             </div>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Executive KPI Cards */}
+          {/* Unified KPI Cards - Clean Card-Based Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-bl-full" />
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Analysis Status
@@ -396,14 +428,16 @@ export default function JobDetailPage() {
                     StatusConfig?.color.split(" ")[0],
                   )}
                 >
-                  <StatusIcon className="h-4 w-4" />
+                  <StatusIcon
+                    className={cn("h-4 w-4", StatusConfig?.color.split(" ")[1])}
+                  />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {isAnalyzed ? "Complete" : "Pending"}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   {isAnalyzed
                     ? "AI insights available"
                     : "Analysis in progress"}
@@ -411,21 +445,21 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   CV Matches
                 </CardTitle>
-                <div className="p-2 rounded-lg bg-emerald-500/10">
-                  <Briefcase className="h-4 w-4 text-emerald-600" />
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <Briefcase className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {analyses?.analyses?.length || 0}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   {analyses?.analyses?.length > 0
                     ? `${avgMatchScore}% avg match`
                     : "No analyses yet"}
@@ -433,14 +467,14 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Top Match Score
                 </CardTitle>
-                <div className="p-2 rounded-lg bg-violet-500/10">
-                  <TrendingUp className="h-4 w-4 text-violet-600" />
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <TrendingUp className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
                 </div>
               </CardHeader>
               <CardContent>
@@ -449,7 +483,7 @@ export default function JobDetailPage() {
                 >
                   {topMatch}%
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   {topMatch > 0
                     ? "Best candidate alignment"
                     : "Analyze CVs to see scores"}
@@ -457,37 +491,37 @@ export default function JobDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-bl-full" />
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Applications
                 </CardTitle>
-                <div className="p-2 rounded-lg bg-amber-500/10">
-                  <Users className="h-4 w-4 text-amber-600" />
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <Users className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                   {job._count?.applications || 0}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                   Total candidates tracked
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Main Content Tabs */}
+          {/* Refined Tabs */}
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl">
+            <TabsList className="bg-slate-100 dark:bg-[#161b1d] p-1 rounded-xl border border-slate-200 dark:border-slate-800">
               <TabsTrigger
                 value="overview"
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-700"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:bg-[#1c2225] dark:data-[state=active]:text-[#4db8d4]"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Overview
@@ -495,33 +529,35 @@ export default function JobDetailPage() {
               <TabsTrigger
                 value="analysis"
                 disabled={!isAnalyzed}
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-700"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:bg-[#1c2225] dark:data-[state=active]:text-[#4db8d4]"
               >
                 <BrainCircuit className="w-4 h-4 mr-2" />
                 AI Intelligence
                 {isAnalyzed && (
-                  <span className="ml-2 w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="ml-2 w-2 h-2 rounded-full bg-[#005f78] dark:bg-[#4db8d4]" />
                 )}
               </TabsTrigger>
               <TabsTrigger
                 value="cvs"
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-700"
+                className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#005f78] dark:data-[state=active]:bg-[#1c2225] dark:data-[state=active]:text-[#4db8d4]"
               >
                 <Target className="w-4 h-4 mr-2" />
                 CV Matches
                 {analyses?.analyses?.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 text-xs bg-[#005f78]/10 text-[#005f78] dark:bg-[#005f78]/20 dark:text-[#4db8d4]"
+                  >
                     {analyses.analyses.length}
                   </Badge>
                 )}
               </TabsTrigger>
             </TabsList>
 
-            {/* Overview Tab */}
+            {/* Overview Tab - Improved Layout */}
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Description Card */}
-                <Card className="lg:col-span-2 border-0 shadow-sm">
+                <Card className="lg:col-span-2 border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -529,10 +565,10 @@ export default function JobDetailPage() {
                           <FileText className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">
+                          <CardTitle className="text-lg text-slate-900 dark:text-slate-100">
                             Job Description
                           </CardTitle>
-                          <CardDescription>
+                          <CardDescription className="text-slate-500 dark:text-slate-400">
                             Original posting content
                           </CardDescription>
                         </div>
@@ -559,7 +595,7 @@ export default function JobDetailPage() {
                       onClick={() =>
                         setDescriptionExpanded(!descriptionExpanded)
                       }
-                      className="mt-4 gap-1 text-slate-600 hover:text-slate-900"
+                      className="mt-4 gap-1 text-slate-600 hover:text-[#005f78] dark:text-slate-400 dark:hover:text-[#4db8d4]"
                     >
                       {descriptionExpanded ? (
                         <>
@@ -575,31 +611,30 @@ export default function JobDetailPage() {
                   </CardContent>
                 </Card>
 
-                {/* Quick Stats Sidebar */}
                 <div className="space-y-4">
-                  <Card className="border-0 shadow-sm bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+                  <Card className="border-0 shadow-sm bg-[#005f78] text-white">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-amber-400" />
+                        <Sparkles className="w-5 h-5 text-white/80" />
                         Executive Summary
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">Match Quality</span>
+                          <span className="text-white/70">Match Quality</span>
                           <span className="font-medium">
                             {topMatch > 0 ? `${topMatch}%` : "N/A"}
                           </span>
                         </div>
                         <Progress
                           value={topMatch}
-                          className="h-2 bg-slate-700"
+                          className="h-2 bg-white/20 [&>div]:bg-white"
                         />
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">CVs Analyzed</span>
+                          <span className="text-white/70">CVs Analyzed</span>
                           <span className="font-medium">
                             {analyses?.analyses?.length || 0}
                           </span>
@@ -609,11 +644,11 @@ export default function JobDetailPage() {
                             (analyses?.analyses?.length || 0) * 10,
                             100,
                           )}
-                          className="h-2 bg-slate-700"
+                          className="h-2 bg-white/20 [&>div]:bg-white"
                         />
                       </div>
-                      <Separator className="bg-slate-700" />
-                      <div className="text-xs text-slate-400">
+                      <Separator className="bg-white/20" />
+                      <div className="text-xs text-white/60">
                         Last updated:{" "}
                         {format(new Date(job.updatedAt), "MMM d, yyyy")}
                       </div>
@@ -621,10 +656,10 @@ export default function JobDetailPage() {
                   </Card>
 
                   {!isAnalyzed && (
-                    <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                    <Card className="border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20">
                       <CardContent className="pt-6">
                         <div className="flex items-start gap-3">
-                          <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5" />
+                          <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5" />
                           <div>
                             <h4 className="font-medium text-amber-900 dark:text-amber-100">
                               Analysis Pending
@@ -636,7 +671,7 @@ export default function JobDetailPage() {
                             {allowManualRetry && (
                               <Button
                                 onClick={handleRetry}
-                                className="mt-3 bg-amber-600 hover:bg-amber-700"
+                                className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
                                 size="sm"
                               >
                                 <Zap className="w-4 h-4 mr-2" />
@@ -652,20 +687,19 @@ export default function JobDetailPage() {
               </div>
             </TabsContent>
 
-            {/* AI Analysis Tab */}
+            {/* AI Analysis Tab - Cleaner Design */}
             <TabsContent value="analysis" className="space-y-6">
               {isAnalyzed ? (
                 <>
-                  {/* Strategic Overview */}
-                  <Card className="border-0 shadow-sm overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
+                  <Card className="border-0 shadow-sm overflow-hidden bg-white dark:bg-[#1c2225]">
+                    <div className="bg-[#005f78] p-6 text-white">
                       <div className="flex items-center gap-3 mb-2">
-                        <Target className="w-6 h-6 text-emerald-400" />
+                        <Target className="w-6 h-6 text-white/80" />
                         <h3 className="text-xl font-semibold">
                           Strategic Position Analysis
                         </h3>
                       </div>
-                      <p className="text-slate-300">
+                      <p className="text-white/80">
                         AI-generated insights for executive decision-making
                       </p>
                     </div>
@@ -683,7 +717,7 @@ export default function JobDetailPage() {
                         </div>
                         <div className="space-y-2">
                           <h4 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-blue-500" />
+                            <Users className="w-4 h-4 text-[#005f78] dark:text-[#4db8d4]" />
                             Ideal Candidate
                           </h4>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -693,7 +727,7 @@ export default function JobDetailPage() {
                         </div>
                         <div className="space-y-2">
                           <h4 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-violet-500" />
+                            <Building2 className="w-4 h-4 text-[#005f78] dark:text-[#4db8d4]" />
                             Company DNA
                           </h4>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -704,12 +738,11 @@ export default function JobDetailPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Requirements Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="border-0 shadow-sm">
+                    <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Shield className="w-5 h-5 text-emerald-600" />
+                        <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                          <Shield className="w-5 h-5 text-[#005f78] dark:text-[#4db8d4]" />
                           Mandatory Requirements
                         </CardTitle>
                       </CardHeader>
@@ -723,13 +756,13 @@ export default function JobDetailPage() {
                               (skill: string) => (
                                 <Badge
                                   key={skill}
-                                  className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800"
+                                  className="bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30"
                                 >
                                   {skill}
                                 </Badge>
                               ),
                             ) || (
-                              <span className="text-sm text-slate-500">
+                              <span className="text-sm text-slate-500 dark:text-slate-500">
                                 No skills specified
                               </span>
                             )}
@@ -748,10 +781,10 @@ export default function JobDetailPage() {
                       </CardContent>
                     </Card>
 
-                    <Card className="border-0 shadow-sm">
+                    <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Award className="w-5 h-5 text-amber-600" />
+                        <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                          <Award className="w-5 h-5 text-amber-500" />
                           Preferred Qualifications
                         </CardTitle>
                       </CardHeader>
@@ -766,13 +799,13 @@ export default function JobDetailPage() {
                                 <Badge
                                   key={skill}
                                   variant="outline"
-                                  className="text-slate-600 dark:text-slate-400"
+                                  className="text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700"
                                 >
                                   {skill}
                                 </Badge>
                               ),
                             ) || (
-                              <span className="text-sm text-slate-500">
+                              <span className="text-sm text-slate-500 dark:text-slate-500">
                                 No preferred skills specified
                               </span>
                             )}
@@ -782,21 +815,20 @@ export default function JobDetailPage() {
                     </Card>
                   </div>
 
-                  {/* Keywords Section */}
-                  <Card className="border-0 shadow-sm">
+                  <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-violet-600" />
+                      <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                        <Zap className="w-5 h-5 text-[#005f78] dark:text-[#4db8d4]" />
                         Strategic Keywords
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-slate-500 dark:text-slate-400">
                         ATS-critical and recruiter trigger terms
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div>
                         <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="w-2 h-2 rounded-full bg-[#005f78] dark:bg-[#4db8d4]" />
                           ATS Critical Keywords
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -804,19 +836,19 @@ export default function JobDetailPage() {
                             (kw: string) => (
                               <Badge
                                 key={kw}
-                                className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                                className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                               >
                                 {kw}
                               </Badge>
                             ),
                           ) || (
-                            <span className="text-sm text-slate-500">
+                            <span className="text-sm text-slate-500 dark:text-slate-500">
                               No keywords extracted
                             </span>
                           )}
                         </div>
                       </div>
-                      <Separator />
+                      <Separator className="bg-slate-100 dark:bg-slate-800" />
                       <div>
                         <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-500" />
@@ -834,7 +866,7 @@ export default function JobDetailPage() {
                               </Badge>
                             ),
                           ) || (
-                            <span className="text-sm text-slate-500">
+                            <span className="text-sm text-slate-500 dark:text-slate-500">
                               No triggers identified
                             </span>
                           )}
@@ -844,21 +876,25 @@ export default function JobDetailPage() {
                   </Card>
                 </>
               ) : (
-                <Card className="border-0 shadow-sm">
+                <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                   <CardContent className="py-16 text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <BrainCircuit className="w-8 h-8 text-slate-400" />
+                      <BrainCircuit className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
                       Analysis Not Available
                     </h3>
-                    <p className="text-slate-500 max-w-md mx-auto mb-6">
+                    <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
                       AI analysis is currently {job.analysisStatus}. Complete
                       the analysis to unlock strategic insights about this
                       position.
                     </p>
                     {canManuallyAnalyze && allowManualRetry && (
-                      <Button onClick={handleRetry} size="lg">
+                      <Button
+                        onClick={handleRetry}
+                        size="lg"
+                        className="bg-[#005f78] hover:bg-[#004a5e] text-white"
+                      >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Run Analysis Now
                       </Button>
@@ -868,16 +904,15 @@ export default function JobDetailPage() {
               )}
             </TabsContent>
 
-            {/* CV Matches Tab */}
+            {/* CV Matches Tab - Refined */}
             <TabsContent value="cvs" className="space-y-6">
-              {/* Analysis Input */}
-              <Card className="border-0 shadow-sm bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+              <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+                    <PieChart className="w-5 h-5 text-[#005f78] dark:text-[#4db8d4]" />
                     Match Analysis
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-slate-500 dark:text-slate-400">
                     Compare your CV against this position to see alignment
                     scores
                   </CardDescription>
@@ -889,10 +924,10 @@ export default function JobDetailPage() {
                         value={selectedCvId}
                         onValueChange={setSelectedCvId}
                       >
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-11 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                           <SelectValue placeholder="Select a CV to analyze..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700">
                           {cvsLoading ? (
                             <SelectItem value="loading" disabled>
                               Loading CVs...
@@ -903,7 +938,11 @@ export default function JobDetailPage() {
                             </SelectItem>
                           ) : (
                             cvs.map((cv: CVVersion) => (
-                              <SelectItem key={cv.id} value={cv.id}>
+                              <SelectItem
+                                key={cv.id}
+                                value={cv.id}
+                                className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                              >
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4" />
                                   {cv.name ||
@@ -919,7 +958,7 @@ export default function JobDetailPage() {
                       onClick={handleAnalyze}
                       disabled={!selectedCvId || analyzeMutation.isPending}
                       size="lg"
-                      className="gap-2"
+                      className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"
                     >
                       {analyzeMutation.isPending ? (
                         <>
@@ -937,18 +976,19 @@ export default function JobDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Results List */}
-              <Card className="border-0 shadow-sm">
+              <Card className="border-0 shadow-sm bg-white dark:bg-[#1c2225]">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Analysis Results</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-slate-900 dark:text-slate-100">
+                      Analysis Results
+                    </CardTitle>
+                    <CardDescription className="text-slate-500 dark:text-slate-400">
                       {analyses?.analyses?.length || 0} CV
                       {analyses?.analyses?.length !== 1 ? "s" : ""} analyzed
                     </CardDescription>
                   </div>
                   {analyses?.analyses?.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                       <span>Avg Score:</span>
                       <span
                         className={cn(
@@ -965,7 +1005,10 @@ export default function JobDetailPage() {
                   {analysesLoading ? (
                     <div className="space-y-4">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-20 w-full" />
+                        <Skeleton
+                          key={i}
+                          className="h-20 w-full bg-slate-200 dark:bg-slate-800"
+                        />
                       ))}
                     </div>
                   ) : analyses?.analyses?.length ? (
@@ -980,14 +1023,13 @@ export default function JobDetailPage() {
                           return (
                             <div
                               key={analysis.id}
-                              className="group relative flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all"
+                              className="group relative flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-[#005f78]/30 dark:hover:border-[#005f78]/30 hover:shadow-sm transition-all bg-white dark:bg-[#161b1d]"
                             >
                               <div className="flex items-start gap-4">
                                 <div
                                   className={cn(
-                                    "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold",
+                                    "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white",
                                     getScoreBg(analysis.matchScore),
-                                    "text-white",
                                   )}
                                 >
                                   {analysis.matchScore}
@@ -997,7 +1039,7 @@ export default function JobDetailPage() {
                                     <span className="font-medium text-slate-900 dark:text-slate-100">
                                       CV #{index + 1}
                                     </span>
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-slate-500 dark:text-slate-500">
                                       {formatDistanceToNow(
                                         new Date(analysis.cvVersion.createdAt),
                                         { addSuffix: true },
@@ -1029,7 +1071,7 @@ export default function JobDetailPage() {
                                       `/my-account/cv/${analysis.cvVersionId}`,
                                     )
                                   }
-                                  className="text-slate-600"
+                                  className="text-slate-600 dark:text-slate-400 hover:text-[#005f78] dark:hover:text-[#4db8d4] hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
                                 >
                                   View CV
                                 </Button>
@@ -1040,6 +1082,7 @@ export default function JobDetailPage() {
                                     handleReanalyze(analysis.cvVersionId)
                                   }
                                   disabled={reanalyzeMutation.isPending}
+                                  className="text-slate-600 dark:text-slate-400 hover:text-[#005f78] dark:hover:text-[#4db8d4]"
                                 >
                                   <RefreshCw
                                     className={cn(
@@ -1057,7 +1100,7 @@ export default function JobDetailPage() {
                                     handleDeleteAnalysis(analysis.id)
                                   }
                                   disabled={deleteAnalysisMutation.isPending}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -1070,12 +1113,12 @@ export default function JobDetailPage() {
                   ) : (
                     <div className="py-12 text-center">
                       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                        <Target className="w-8 h-8 text-slate-400" />
+                        <Target className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                       </div>
                       <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
                         No Analyses Yet
                       </h3>
-                      <p className="text-slate-500 max-w-sm mx-auto">
+                      <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                         Select a CV above to see how well it matches this job
                         description
                       </p>
@@ -1095,6 +1138,16 @@ export default function JobDetailPage() {
           onSubmit={handleEdit}
           isSubmitting={updateJob.isPending}
         />
+        <CreateApplicationModal
+          open={applicationModalOpen}
+          onOpenChange={setApplicationModalOpen}
+          jobId={job.id}
+          jobTitle={job.title}
+          onSuccess={() => {
+            // Optionally refetch data or show toast
+            setApplicationModalOpen(false);
+          }}
+        />
         <DeleteJobDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
@@ -1110,14 +1163,14 @@ export default function JobDetailPage() {
 // Enhanced Skeleton Loading
 function JobDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-[#161b1d]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800" />
             <div className="space-y-2">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-8 w-64 bg-slate-200 dark:bg-slate-800" />
+              <Skeleton className="h-4 w-40 bg-slate-200 dark:bg-slate-800" />
             </div>
           </div>
         </div>
@@ -1125,11 +1178,14 @@ function JobDetailSkeleton() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+            <Skeleton
+              key={i}
+              className="h-32 rounded-xl bg-slate-200 dark:bg-slate-800"
+            />
           ))}
         </div>
-        <Skeleton className="h-12 w-80 rounded-lg mb-6" />
-        <Skeleton className="h-96 rounded-xl" />
+        <Skeleton className="h-12 w-80 rounded-lg mb-6 bg-slate-200 dark:bg-slate-800" />
+        <Skeleton className="h-96 rounded-xl bg-slate-200 dark:bg-slate-800" />
       </div>
     </div>
   );
@@ -1137,21 +1193,22 @@ function JobDetailSkeleton() {
 
 function JobNotFound() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-      <Card className="border-0 shadow-lg max-w-md mx-auto text-center p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d] flex items-center justify-center">
+      <Card className="border-0 shadow-lg max-w-md mx-auto text-center p-8 bg-white dark:bg-[#1c2225]">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-950 flex items-center justify-center">
-          <XCircle className="w-8 h-8 text-red-600" />
+          <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
           Position Not Found
         </h2>
-        <p className="text-slate-500 mb-6">
-          The job you're looking for doesn't exist or you don't have access to
-          it.
+        <p className="text-slate-500 dark:text-slate-400 mb-6">
+          The job you `&apos;`re looking for doesn `&apos;`t exist or you don
+          `&apos;`t have access to it.
         </p>
         <Button
           onClick={() => (window.location.href = "/my-account/jobs")}
           size="lg"
+          className="bg-[#005f78] hover:bg-[#004a5e] text-white"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Jobs

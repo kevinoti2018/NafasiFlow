@@ -39,7 +39,7 @@ export async function GET(
       job: {
         select: { id: true, title: true, company: true, normalizedTitle: true },
       },
-      application: { select: { id: true, status: true } },
+      // application: { select: { id: true, status: true } },
     },
   });
 
@@ -71,7 +71,7 @@ export async function DELETE(
 
   const analysis = await db.cVJobAnalysis.findFirst({
     where: { id: validatedParams.analysisId, userId: session.id },
-    include: { application: true },
+    // include: { application: true },
   });
 
   if (!analysis) {

@@ -12,7 +12,8 @@ import {
   Star,
   Pencil,
   Trash2,
-  ExternalLink,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import {
   Card,
@@ -35,8 +36,9 @@ import {
   useDeleteTemplate,
 } from "@/hooks/use-templates";
 import { DeleteTemplateDialog } from "@/components/templates/delete-template-dialog";
+import { CVPreviewModal } from "@/components/cv/cv-preview-modal";
 import { CVVersion } from "@prisma/client";
-// types/application.ts or at the top of the page
+
 type ApplicationWithJob = {
   id: string;
   userId: string;
@@ -49,15 +51,13 @@ type ApplicationWithJob = {
   appliedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-  // Related job (included via Prisma include)
   job: {
     id: string;
     title: string | null;
     company: string | null;
-    // add other job fields if needed (e.g., description, url)
   } | null;
-  // Optionally, other relations like cvVersion, template, etc.
 };
+
 export default function TemplateDetailPage() {
   const { templateId } = useParams();
   const router = useRouter();
@@ -68,7 +68,8 @@ export default function TemplateDetailPage() {
   const [editName, setEditName] = useState("");
   const [editIsDefault, setEditIsDefault] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const template = data?.template;
 
   const handleEdit = async () => {
@@ -87,6 +88,22 @@ export default function TemplateDetailPage() {
     setIsEditing(true);
   };
 
+  const handleReanalyze = async () => {
+    setIsReanalyzing(true);
+    try {
+      const res = await fetch(`/api/templates/${template.id}/reanalyze`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Re‑analysis failed");
+      await refetch();
+      toast.success("Template re‑analyzed");
+    } catch (err) {
+      toast.error("Failed to re‑analyze template");
+    } finally {
+      setIsReanalyzing(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!template) return;
     await deleteTemplate.mutateAsync(template.id);
@@ -95,6 +112,10 @@ export default function TemplateDetailPage() {
 
   if (isLoading) return <TemplateDetailSkeleton />;
   if (error || !template) return <TemplateNotFound />;
+
+  const metadata = template.metadata as any;
+  const foundSections = metadata?.foundSections || [];
+  const missingSections = metadata?.missingSections || [];
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6 max-w-4xl">
@@ -176,6 +197,17 @@ export default function TemplateDetailPage() {
                   Edit
                 </Button>
                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReanalyze}
+                  disabled={isReanalyzing}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-1 ${isReanalyzing ? "animate-spin" : ""}`}
+                  />
+                  Re‑analyze
+                </Button>
+                <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => setDeleteDialogOpen(true)}
@@ -197,10 +229,7 @@ export default function TemplateDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() => window.open(template.fileUrl, "_blank")}
-            >
+            <Button variant="outline" onClick={() => setPreviewOpen(true)}>
               <Eye className="h-4 w-4 mr-2" />
               Preview
             </Button>
@@ -215,13 +244,80 @@ export default function TemplateDetailPage() {
           <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground">
             <p>File type: {template.type.toUpperCase()}</p>
             <p className="mt-1">
-              Size: {((template.metadata?.bytes || 0) / 1024).toFixed(1)} KB
+              Size: {((metadata?.bytes || 0) / 1024).toFixed(1)} KB
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Usage Statistics */}
+      {/* Template Analysis Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Template Analysis</CardTitle>
+          <CardDescription>
+            Sections detected in this template
+            {metadata?.lastAnalyzedAt && (
+              <span className="text-xs text-muted-foreground ml-2">
+                (last analyzed:{" "}
+                {formatDistanceToNow(new Date(metadata.lastAnalyzedAt), {
+                  addSuffix: true,
+                })}
+                )
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {foundSections.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {foundSections.map((section: string) => (
+                <Badge key={section} variant="secondary" className="capitalize">
+                  {section}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No sections detected yet. Run re‑analysis.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Missing Important Sections Warning */}
+      {missingSections.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+              <AlertCircle className="h-5 w-5" />
+              Missing Important Sections
+            </CardTitle>
+            <CardDescription className="text-amber-700 dark:text-amber-400">
+              This template is missing these sections. When generating a CV,
+              these parts will not be displayed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {missingSections.map((section: string) => (
+                <Badge
+                  key={section}
+                  variant="outline"
+                  className="border-amber-300 text-amber-800 dark:border-amber-700 dark:text-amber-300"
+                >
+                  {section}
+                </Badge>
+              ))}
+            </div>
+            <p className="text-xs text-amber-700 dark:text-amber-500 mt-3">
+              Tip: You can edit the DOCX template to add these sections, or the
+              system will skip them during generation.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Usage Statistics (unchanged) */}
       <Card>
         <CardHeader>
           <CardTitle>Usage Statistics</CardTitle>
@@ -311,6 +407,13 @@ export default function TemplateDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Modals */}
+      <CVPreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        fileUrl={template.fileUrl}
+        title={template.name}
+      />
       <DeleteTemplateDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

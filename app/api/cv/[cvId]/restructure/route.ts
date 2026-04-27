@@ -10,6 +10,7 @@ import { downloadFile } from "@/lib/utils/download";
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
+import { Prisma } from "@prisma/client";
 
 export async function POST(
   req: NextRequest,
@@ -38,7 +39,11 @@ export async function POST(
   }
 
   // Need raw text – either from profile.rawText or download original file
-  let rawText = (cv.profile as any)?.rawText;
+  let rawText: string | undefined = undefined;
+  // Safely check if profile is an object with rawText
+  if (cv.profile && typeof cv.profile === "object" && "rawText" in cv.profile) {
+    rawText = (cv.profile as { rawText?: string }).rawText;
+  }
   if (!rawText && cv.originalFileUrl) {
     // Download file and extract text
     const buffer = await downloadFile(cv.originalFileUrl);
@@ -57,7 +62,11 @@ export async function POST(
     );
   }
 
-  const structuredProfile = await optimizeWithLLM("cvStructure", { rawText });
+  // Cast the result to Prisma.InputJsonValue
+  const structuredProfile = (await optimizeWithLLM("cvStructure", {
+    rawText,
+  })) as Prisma.InputJsonValue;
+
   await db.cVVersion.update({
     where: { id: cv.id },
     data: { profile: structuredProfile },

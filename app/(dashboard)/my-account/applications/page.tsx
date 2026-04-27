@@ -11,20 +11,23 @@ import {
   Plus,
   ArrowRight,
   Clock,
-  TrendingUp,
   CheckCircle2,
   XCircle,
   MoreHorizontal,
   Building2,
-  MapPin,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Target,
   FileText,
-  Trash2,
   ExternalLink,
+  LayoutGrid,
+  List,
+  MapPin,
+  ArrowUpRight,
+  RotateCcw,
+  Eye,
 } from "lucide-react";
 import {
   Card,
@@ -37,13 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -53,16 +49,16 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApplications } from "@/hooks/use-application";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 
 type ApplicationWithJob = {
   id: string;
@@ -88,21 +84,21 @@ type ApplicationWithJob = {
 const statusConfig = {
   saved: {
     color:
-      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300",
+      "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
     icon: FileText,
     label: "Saved",
     description: "Bookmarked for later",
   },
   applied: {
     color:
-      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300",
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
     icon: Briefcase,
     label: "Applied",
     description: "Application submitted",
   },
   interviewing: {
     color:
-      "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300",
+      "bg-[#005f78]/15 text-[#005f78] border-[#005f78]/25 dark:bg-[#005f78]/25 dark:text-[#4db8d4] dark:border-[#005f78]/40",
     icon: Sparkles,
     label: "Interviewing",
     description: "In interview process",
@@ -127,6 +123,7 @@ export default function ApplicationsPage() {
   const router = useRouter();
   const [status, setStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [page, setPage] = useState(1);
   const limit = 10;
 
@@ -164,456 +161,664 @@ export default function ApplicationsPage() {
         )
       : 0;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6 md:space-y-8 max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              Applications
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Track and manage your job applications
-            </p>
-          </div>
-          <Button
-            onClick={() => router.push("/my-account/jobs")}
-            className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4" />
-            Find Jobs
-          </Button>
-        </motion.div>
-
-        {/* Stats Overview */}
-        {!isLoading && applications.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4"
-          >
-            <StatCard
-              icon={Briefcase}
-              label="Total Applications"
-              value={totalApps}
-              color="blue"
-            />
-            <StatCard
-              icon={Sparkles}
-              label="Interviewing"
-              value={interviewingCount}
-              color="violet"
-              trend={interviewingCount > 0 ? "up" : undefined}
-            />
-            <StatCard
-              icon={CheckCircle2}
-              label="Offers"
-              value={offeredCount}
-              color="emerald"
-              trend={offeredCount > 0 ? "up" : undefined}
-            />
-            <StatCard
-              icon={Target}
-              label="Avg Match Score"
-              value={`${avgMatchScore}%`}
-              color="amber"
-              subtext="Across all apps"
-            />
-          </motion.div>
-        )}
-
-        {/* Main Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
-            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6 border-b bg-slate-50/50 dark:bg-slate-900/50">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className="text-lg sm:text-xl">
-                    Your Applications
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm mt-1">
-                    {filteredApps.length}{" "}
-                    {filteredApps.length === 1 ? "application" : "applications"}{" "}
-                    found
-                  </CardDescription>
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <div className="relative flex-1 sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search jobs..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 h-9 sm:h-10 text-sm"
-                    />
-                  </div>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="w-full sm:w-[160px] h-9 sm:h-10">
-                      <Filter className="h-4 w-4 mr-2 shrink-0" />
-                      <SelectValue placeholder="Filter status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All statuses</SelectItem>
-                      <SelectItem value="saved">Saved</SelectItem>
-                      <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interviewing">Interviewing</SelectItem>
-                      <SelectItem value="offered">Offered</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="p-4 sm:p-6 space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <Skeleton className="h-12 w-12 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-1/3" />
-                        <Skeleton className="h-3 w-1/4" />
-                      </div>
-                      <Skeleton className="h-8 w-24" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredApps.length === 0 ? (
-                <EmptyState
-                  search={search}
-                  onBrowse={() => router.push("/my-account/jobs")}
-                />
-              ) : (
-                <>
-                  {/* Desktop Table */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-[35%]">Position</TableHead>
-                          <TableHead className="w-[15%]">Match Score</TableHead>
-                          <TableHead className="w-[15%]">Status</TableHead>
-                          <TableHead className="w-[15%]">Applied</TableHead>
-                          <TableHead className="w-[20%] text-right">
-                            Actions
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <AnimatePresence>
-                          {filteredApps.map(
-                            (app: ApplicationWithJob, idx: number) => {
-                              const statusConfigItem = statusConfig[app.status];
-                              const StatusIcon = statusConfigItem.icon;
-
-                              return (
-                                <motion.tr
-                                  key={app.id}
-                                  initial={{ opacity: 0, x: -20 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: idx * 0.05 }}
-                                  className="group cursor-pointer border-b hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
-                                  onClick={() =>
-                                    router.push(
-                                      `/my-account/applications/${app.id}`,
-                                    )
-                                  }
-                                >
-                                  <TableCell className="py-4">
-                                    <div className="flex items-start gap-3">
-                                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                                        <Building2 className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                                      </div>
-                                      <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                                          {app.job?.title ||
-                                            "Untitled Position"}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground truncate">
-                                          {app.job?.company ||
-                                            "Unknown Company"}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className={cn(
-                                          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold",
-                                          (app.matchScore || 0) >= 80
-                                            ? "bg-emerald-100 text-emerald-700"
-                                            : (app.matchScore || 0) >= 60
-                                              ? "bg-amber-100 text-amber-700"
-                                              : "bg-red-100 text-red-700",
-                                        )}
-                                      >
-                                        {app.matchScore || 0}%
-                                      </div>
-                                      <div className="w-16 hidden lg:block">
-                                        <Progress
-                                          value={app.matchScore || 0}
-                                          className={cn(
-                                            "h-1.5",
-                                            (app.matchScore || 0) >= 80
-                                              ? "bg-emerald-100 [&>div]:bg-emerald-500"
-                                              : (app.matchScore || 0) >= 60
-                                                ? "bg-amber-100 [&>div]:bg-amber-500"
-                                                : "bg-red-100 [&>div]:bg-red-500",
-                                          )}
-                                        />
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      className={cn(
-                                        "gap-1.5 px-2.5 py-1",
-                                        statusConfigItem.color,
-                                      )}
-                                    >
-                                      <StatusIcon className="h-3 w-3" />
-                                      {statusConfigItem.label}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                      <Calendar className="h-3.5 w-3.5" />
-                                      {app.appliedAt
-                                        ? format(
-                                            new Date(app.appliedAt),
-                                            "MMM d, yyyy",
-                                          )
-                                        : "Not applied"}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          router.push(
-                                            `/my-account/applications/${app.id}`,
-                                          );
-                                        }}
-                                      >
-                                        View
-                                        <ArrowRight className="h-4 w-4 ml-1" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </motion.tr>
-                              );
-                            },
-                          )}
-                        </AnimatePresence>
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Mobile Cards */}
-                  <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
-                    <AnimatePresence>
-                      {filteredApps.map(
-                        (app: ApplicationWithJob, idx: number) => {
-                          const statusConfigItem = statusConfig[app.status];
-                          const StatusIcon = statusConfigItem.icon;
-
-                          return (
-                            <motion.div
-                              key={app.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: idx * 0.05 }}
-                              className="p-4 active:bg-slate-50 dark:active:bg-slate-900/50 transition-colors"
-                              onClick={() =>
-                                router.push(
-                                  `/my-account/applications/${app.id}`,
-                                )
-                              }
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-3 flex-1 min-w-0">
-                                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                                    <Building2 className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
-                                      {app.job?.title || "Untitled Position"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {app.job?.company || "Unknown Company"}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <Badge
-                                        className={cn(
-                                          "gap-1 px-1.5 py-0.5 text-xs",
-                                          statusConfigItem.color,
-                                        )}
-                                      >
-                                        <StatusIcon className="h-3 w-3" />
-                                        {statusConfigItem.label}
-                                      </Badge>
-                                      <span
-                                        className={cn(
-                                          "text-xs font-medium",
-                                          (app.matchScore || 0) >= 80
-                                            ? "text-emerald-600"
-                                            : (app.matchScore || 0) >= 60
-                                              ? "text-amber-600"
-                                              : "text-red-600",
-                                        )}
-                                      >
-                                        {app.matchScore || 0}% match
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-slate-400 shrink-0" />
-                              </div>
-                            </motion.div>
-                          );
-                        },
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Pagination */}
-                  {pagination && pagination.totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t bg-slate-50/50 dark:bg-slate-900/50">
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Page {page} of {pagination.totalPages}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page <= 1}
-                          onClick={() => setPage(page - 1)}
-                          className="h-8 sm:h-9 px-2 sm:px-3"
-                        >
-                          <ChevronLeft className="h-4 w-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Previous</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page >= pagination.totalPages}
-                          onClick={() => setPage(page + 1)}
-                          className="h-8 sm:h-9 px-2 sm:px-3"
-                        >
-                          <span className="hidden sm:inline">Next</span>
-                          <ChevronRight className="h-4 w-4 sm:ml-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color, trend, subtext }: any) {
-  const colorClasses = {
-    blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-    violet:
-      "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-    emerald:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    amber:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
-    <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
-      <CardContent className="p-3 sm:p-4 md:p-6">
-        <div className="flex items-start justify-between">
-          <div
-            className={cn(
-              "p-1.5 sm:p-2 rounded-lg",
-              colorClasses[color as keyof typeof colorClasses],
-            )}
-          >
-            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          {trend === "up" && (
-            <div className="flex items-center text-emerald-600 text-xs font-medium">
-              <TrendingUp className="h-3 w-3 mr-0.5" />
-              Active
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
+      {/* Header */}
+      <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-[#161b1d]/80 border-b border-slate-200/50 dark:border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 rounded-xl bg-[#005f78] shadow-lg shadow-[#005f78]/25">
+                <Briefcase className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                  Applications
+                </h1>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Track and manage your job applications
+                </p>
+              </div>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="default"
+                className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"
+                onClick={() => router.push("/my-account/jobs")}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Find Jobs</span>
+                <span className="sm:hidden">Find</span>
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="mt-2 sm:mt-3">
-          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {value}
-          </p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            {label}
-          </p>
-          {subtext && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-              {subtext}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function EmptyState({
-  search,
-  onBrowse,
-}: {
-  search: string;
-  onBrowse: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 text-center">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-        {search ? (
-          <Search className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
-        ) : (
-          <Briefcase className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400" />
-        )}
       </div>
-      <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
-        {search ? "No matches found" : "No applications yet"}
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-sm mt-2 px-4">
-        {search
-          ? "Try adjusting your search terms or filters to find what you're looking for."
-          : "Start your job search and track your applications here."}
-      </p>
-      {!search && (
-        <Button
-          onClick={onBrowse}
-          className="gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Browse Jobs
-        </Button>
-      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* KPI Cards */}
+        {!isLoading && applications.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Total Applications
+                </CardTitle>
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <Briefcase className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  {totalApps}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                  All applications
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Interviewing
+                </CardTitle>
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <Sparkles className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  {interviewingCount}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Progress
+                    value={
+                      totalApps > 0 ? (interviewingCount / totalApps) * 100 : 0
+                    }
+                    className="h-1.5 w-16 bg-slate-200 dark:bg-slate-700"
+                  />
+                  <span className="text-xs text-slate-500 dark:text-slate-500">
+                    {totalApps > 0
+                      ? Math.round((interviewingCount / totalApps) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-bl-full dark:bg-emerald-500/10" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Offers
+                </CardTitle>
+                <div className="p-2 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  {offeredCount}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                  Job offers received
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Avg Match Score
+                </CardTitle>
+                <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                  <Target className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                  {avgMatchScore}%
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                  Across all applications
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <Card className="border-0 shadow-sm overflow-hidden bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-800">
+          <CardHeader className="border-b border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg text-slate-900 dark:text-slate-100">
+                  Your Applications
+                </CardTitle>
+                <CardDescription className="text-slate-500 dark:text-slate-400">
+                  {isLoading
+                    ? "Loading applications..."
+                    : `${filteredApps.length} application${filteredApps.length !== 1 ? "s" : ""} found`}
+                </CardDescription>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Search jobs..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10 h-10 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(v) => setViewMode(v as "list" | "grid")}
+                >
+                  <TabsList className="h-10 bg-slate-100 dark:bg-[#161b1d]">
+                    <TabsTrigger
+                      value="list"
+                      className="gap-2 data-[state=active]:bg-white data-[state=active]:text-[#005f78] data-[state=active]:shadow-sm dark:data-[state=active]:bg-[#005f78] dark:data-[state=active]:text-white"
+                    >
+                      <List className="h-4 w-4" />
+                      <span className="hidden sm:inline">List</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="grid"
+                      className="gap-2 data-[state=active]:bg-white data-[state=active]:text-[#005f78] data-[state=active]:shadow-sm dark:data-[state=active]:bg-[#005f78] dark:data-[state=active]:text-white"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      <span className="hidden sm:inline">Grid</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <Button
+                variant={status === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("all")}
+                className={cn(
+                  "h-8",
+                  status === "all"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
+              >
+                All
+              </Button>
+              <Button
+                variant={status === "saved" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("saved")}
+                className={cn(
+                  "h-8",
+                  status === "saved"
+                    ? "bg-slate-700 hover:bg-slate-800 text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-700 hover:border-slate-500/50",
+                )}
+              >
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Saved
+              </Button>
+              <Button
+                variant={status === "applied" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("applied")}
+                className={cn(
+                  "h-8",
+                  status === "applied"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
+              >
+                <Briefcase className="h-3.5 w-3.5 mr-1.5" />
+                Applied
+              </Button>
+              <Button
+                variant={status === "interviewing" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("interviewing")}
+                className={cn(
+                  "h-8",
+                  status === "interviewing"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                Interviewing
+              </Button>
+              <Button
+                variant={status === "offered" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("offered")}
+                className={cn(
+                  "h-8",
+                  status === "offered"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-emerald-600 hover:border-emerald-500/50",
+                )}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                Offered
+              </Button>
+              <Button
+                variant={status === "rejected" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatus("rejected")}
+                className={cn(
+                  "h-8",
+                  status === "rejected"
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-red-600 hover:border-red-500/50",
+                )}
+              >
+                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                Rejected
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-6 space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-16 w-full bg-slate-200 dark:bg-slate-800"
+                  />
+                ))}
+              </div>
+            ) : viewMode === "list" ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                      <TableHead className="w-[35%] text-slate-500 dark:text-slate-400">
+                        Position
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Match Score
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Status
+                      </TableHead>
+                      <TableHead className="hidden sm:table-cell text-slate-500 dark:text-slate-400">
+                        Applied
+                      </TableHead>
+                      <TableHead className="text-right text-slate-500 dark:text-slate-400">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredApps.map((app: ApplicationWithJob) => {
+                      const statusConfigItem = statusConfig[app.status];
+                      const StatusIcon = statusConfigItem.icon;
+
+                      return (
+                        <TableRow
+                          key={app.id}
+                          onClick={() =>
+                            router.push(`/my-account/applications/${app.id}`)
+                          }
+                          className="cursor-pointer group border-slate-100 dark:border-slate-800 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/5"
+                        >
+                          <TableCell>
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={cn(
+                                  "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                                  app.status === "offered"
+                                    ? "bg-emerald-100 dark:bg-emerald-900/30"
+                                    : "bg-slate-100 dark:bg-slate-800",
+                                )}
+                              >
+                                <Building2
+                                  className={cn(
+                                    "h-5 w-5",
+                                    app.status === "offered"
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-slate-400 dark:text-slate-500",
+                                  )}
+                                />
+                              </div>
+                              <div>
+                                <div className="font-medium text-slate-900 dark:text-slate-100">
+                                  {app.job?.title || "Untitled Position"}
+                                </div>
+                                <div className="text-sm text-slate-500 dark:text-slate-500">
+                                  {app.job?.company || "Unknown Company"}
+                                </div>
+                                {app.job?.location && (
+                                  <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                    <MapPin className="h-3 w-3" />
+                                    {app.job.location}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  "h-8 w-8 rounded-lg flex items-center justify-center border-2",
+                                  (app.matchScore || 0) >= 80
+                                    ? "bg-[#005f78]/10 border-[#005f78]/20 dark:bg-[#005f78]/20 dark:border-[#005f78]/30"
+                                    : (app.matchScore || 0) >= 60
+                                      ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50"
+                                      : "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/50",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "text-xs font-bold",
+                                    (app.matchScore || 0) >= 80
+                                      ? "text-[#005f78] dark:text-[#4db8d4]"
+                                      : (app.matchScore || 0) >= 60
+                                        ? "text-amber-700 dark:text-amber-400"
+                                        : "text-red-700 dark:text-red-400",
+                                  )}
+                                >
+                                  {app.matchScore || 0}
+                                </span>
+                              </div>
+                              <div className="w-16 hidden lg:block">
+                                <Progress
+                                  value={app.matchScore || 0}
+                                  className={cn(
+                                    "h-1.5 bg-slate-200 dark:bg-slate-700",
+                                    (app.matchScore || 0) >= 80
+                                      ? "[&>div]:bg-[#005f78]"
+                                      : (app.matchScore || 0) >= 60
+                                        ? "[&>div]:bg-amber-500"
+                                        : "[&>div]:bg-red-500",
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn("gap-1.5", statusConfigItem.color)}
+                            >
+                              <StatusIcon className="h-3 w-3" />
+                              {statusConfigItem.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-slate-500 dark:text-slate-500">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {app.appliedAt
+                                ? format(new Date(app.appliedAt), "MMM d, yyyy")
+                                : "Not applied"}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div
+                              className="flex items-center justify-end gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#005f78] hover:text-[#005f78] hover:bg-[#005f78]/10 dark:hover:text-[#4db8d4] dark:hover:bg-[#005f78]/10"
+                                onClick={() =>
+                                  router.push(
+                                    `/my-account/applications/${app.id}`,
+                                  )
+                                }
+                              >
+                                <span className="hidden sm:inline mr-1 text-xs">
+                                  View
+                                </span>
+                                <ArrowUpRight className="h-4 w-4" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700"
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      router.push(
+                                        `/my-account/applications/${app.id}`,
+                                      )
+                                    }
+                                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  {app.job?.url && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        window.open(app.job!.url!, "_blank")
+                                      }
+                                      className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                                    >
+                                      <ExternalLink className="mr-2 h-4 w-4" />
+                                      Open Job Posting
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filteredApps.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-32 text-center">
+                          <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500">
+                            <Search className="h-8 w-8 mb-2 opacity-50" />
+                            <p>No applications found</p>
+                            <p className="text-sm">
+                              {search || status !== "all"
+                                ? "Try adjusting your search or filters"
+                                : "Start applying to jobs to track them here"}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredApps.map((app: ApplicationWithJob) => {
+                    const statusConfigItem = statusConfig[app.status];
+                    const StatusIcon = statusConfigItem.icon;
+
+                    return (
+                      <Card
+                        key={app.id}
+                        className="group cursor-pointer border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all bg-white dark:bg-[#161b1d] hover:border-[#005f78]/30 dark:hover:border-[#005f78]/30"
+                        onClick={() =>
+                          router.push(`/my-account/applications/${app.id}`)
+                        }
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div
+                              className={cn(
+                                "w-12 h-12 rounded-xl flex items-center justify-center",
+                                app.status === "offered"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30"
+                                  : "bg-slate-100 dark:bg-slate-800",
+                              )}
+                            >
+                              <Building2
+                                className={cn(
+                                  "h-6 w-6",
+                                  app.status === "offered"
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-slate-400 dark:text-slate-500",
+                                )}
+                              />
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn("gap-1.5", statusConfigItem.color)}
+                            >
+                              <StatusIcon className="h-3 w-3" />
+                              {statusConfigItem.label}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-lg mt-3 line-clamp-1 text-slate-900 dark:text-slate-100">
+                            {app.job?.title || "Untitled Position"}
+                          </CardTitle>
+                          <CardDescription className="line-clamp-1 text-slate-500 dark:text-slate-500">
+                            {app.job?.company || "Unknown Company"}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={cn(
+                                  "h-8 w-8 rounded-lg flex items-center justify-center border-2",
+                                  (app.matchScore || 0) >= 80
+                                    ? "bg-[#005f78]/10 border-[#005f78]/20 dark:bg-[#005f78]/20 dark:border-[#005f78]/30"
+                                    : (app.matchScore || 0) >= 60
+                                      ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50"
+                                      : "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/50",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "text-xs font-bold",
+                                    (app.matchScore || 0) >= 80
+                                      ? "text-[#005f78] dark:text-[#4db8d4]"
+                                      : (app.matchScore || 0) >= 60
+                                        ? "text-amber-700 dark:text-amber-400"
+                                        : "text-red-700 dark:text-red-400",
+                                  )}
+                                >
+                                  {app.matchScore || 0}
+                                </span>
+                              </div>
+                              <div className="w-20">
+                                <Progress
+                                  value={app.matchScore || 0}
+                                  className={cn(
+                                    "h-1.5 bg-slate-200 dark:bg-slate-700",
+                                    (app.matchScore || 0) >= 80
+                                      ? "[&>div]:bg-[#005f78]"
+                                      : (app.matchScore || 0) >= 60
+                                        ? "[&>div]:bg-amber-500"
+                                        : "[&>div]:bg-red-500",
+                                  )}
+                                />
+                              </div>
+                            </div>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              {app.appliedAt
+                                ? format(new Date(app.appliedAt), "MMM d")
+                                : "Not applied"}
+                            </span>
+                          </div>
+                        </CardContent>
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 shadow-lg bg-[#005f78] hover:bg-[#004a5e] text-white border-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/my-account/applications/${app.id}`);
+                            }}
+                          >
+                            <ArrowUpRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+                {filteredApps.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-slate-500 dark:text-slate-500">
+                    <Search className="h-12 w-12 mb-4 opacity-50" />
+                    <p className="text-lg font-medium">No applications found</p>
+                    <p className="text-sm">
+                      {search || status !== "all"
+                        ? "Try adjusting your search or filters"
+                        : "Start applying to jobs to track them here"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Page {page} of {pagination.totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => handlePageChange(page - 1)}
+                    className="h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= pagination.totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                    className="h-9 px-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/10"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

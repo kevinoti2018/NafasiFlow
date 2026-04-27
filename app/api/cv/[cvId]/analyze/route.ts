@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/cv/[cvId]/analyze/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/utils/session";
@@ -10,6 +9,15 @@ import {
 } from "@/lib/utils/validate";
 import { cvIdParamSchema, analyzeCVBodySchema } from "@/lib/validations/cv";
 import { optimizeWithLLM } from "@/lib/utils/llmclient";
+import { CVInput } from "@/lib/ai/prompts"; // import if exists
+
+// Define MatchResult interface (adjust fields as needed)
+interface MatchResult {
+  matchScore: number;
+  rankSignal: string; // adjust type if needed
+  verdict: "proceed" | "consider" | "high_risk";
+  // other fields that might be returned
+}
 
 export async function POST(
   req: NextRequest,
@@ -54,14 +62,15 @@ export async function POST(
       continue;
     }
 
-    const matchResult = await optimizeWithLLM("match", {
-      cv: cv.profile as any,
+    // Cast the result of optimizeWithLLM to MatchResult
+    const matchResult = (await optimizeWithLLM("match", {
+      cv: cv.profile as CVInput, // use proper type, not any
       job: {
         title: job.title || "",
         company: job.company || "",
         description: job.rawContent,
       },
-    });
+    })) as MatchResult;
 
     const analysis = await db.cVJobAnalysis.create({
       data: {
@@ -69,7 +78,7 @@ export async function POST(
         cvVersionId: cv.id,
         jobId,
         matchScore: matchResult.matchScore,
-        analysis: matchResult,
+        analysis: { ...matchResult }, // spread to avoid index signature issues
         rankSignal: matchResult.rankSignal,
         verdict: matchResult.verdict,
         analysisVersion: cv.analysisVersion,

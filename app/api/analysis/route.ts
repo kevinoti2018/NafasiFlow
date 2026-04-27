@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/utils/session";
 import { db } from "@/lib/utils/db";
 import { validateQuery, handleZodError } from "@/lib/utils/validate";
 import { z } from "zod";
+import { Prisma } from "@prisma/client"; // Import Prisma types
 
 const analysesListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -33,11 +34,21 @@ export async function GET(req: NextRequest) {
   const { page, limit, minMatchScore, verdict, jobId, cvId } = query;
   const skip = (page - 1) * limit;
 
-  const where: any = { userId: session.id };
-  if (minMatchScore !== undefined) where.matchScore = { gte: minMatchScore };
-  if (verdict) where.verdict = verdict;
-  if (jobId) where.jobId = jobId;
-  if (cvId) where.cvVersionId = cvId;
+  // Build where clause with proper typing
+  const where: Prisma.CVJobAnalysisWhereInput = { userId: session.id };
+
+  if (minMatchScore !== undefined) {
+    where.matchScore = { gte: minMatchScore };
+  }
+  if (verdict) {
+    where.verdict = verdict;
+  }
+  if (jobId) {
+    where.jobId = jobId;
+  }
+  if (cvId) {
+    where.cvVersionId = cvId;
+  }
 
   const [analyses, totalCount] = await Promise.all([
     db.cVJobAnalysis.findMany({
@@ -48,7 +59,7 @@ export async function GET(req: NextRequest) {
       include: {
         job: { select: { id: true, title: true, company: true } },
         cvVersion: { select: { id: true, name: true, source: true } },
-        application: { select: { id: true, status: true } },
+        // application: { select: { id: true, status: true } },
       },
     }),
     db.cVJobAnalysis.count({ where }),

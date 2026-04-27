@@ -65,10 +65,10 @@ export function AppSidebar({ sections, user }: Readonly<AppSidebarProps>) {
           </div>
           <div className="flex flex-col">
             <span className="text-lg leading-none font-black tracking-tighter text-foreground uppercase">
-              Career
+              Nafasi
             </span>
             <span className="mt-1 text-[10px] font-black tracking-[0.3em] text-primary uppercase">
-              Engine
+              Flow
             </span>
           </div>
         </Link>

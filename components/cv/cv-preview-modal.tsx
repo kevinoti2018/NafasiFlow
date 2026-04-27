@@ -1,4 +1,3 @@
-// components/cv/cv-preview-modal.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -17,8 +16,10 @@ import {
   ZoomOut,
   RotateCcw,
   Download,
+  FileText,
 } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { renderAsync } from "docx-preview";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { cn } from "@/lib/utils";
@@ -46,27 +47,92 @@ export function CVPreviewModal({
   const [scale, setScale] = useState(1.5);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const docxContainerRef = useRef<HTMLDivElement>(null);
+  const [isDocx, setIsDocx] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
 
+  // ── Detect file type ──────────────────────────────────────────────
+  useEffect(() => {
+    const url = fileUrl?.toLowerCase() || "";
+    setIsDocx(url.includes(".docx"));
+  }, [fileUrl]);
+
+  // ── PDF: resize observer ──────────────────────────────────────────
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth - 48); // Account for padding
+        setContainerWidth(containerRef.current.clientWidth - 48);
       }
     };
-
     updateWidth();
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
+  // ── DOCX: clear on close ──────────────────────────────────────────
+  useEffect(() => {
+    if (!open && docxContainerRef.current) {
+      docxContainerRef.current.innerHTML = "";
+    }
+  }, [open]);
+
+  // ── DOCX: render with delay to wait for dialog mount ─────────────
+  useEffect(() => {
+    if (!open || !isDocx || !fileUrl) return;
+
+    // Reset state
+    setDocxError(null);
+    setDocxLoading(true);
+
+    const timer = setTimeout(async () => {
+      if (!docxContainerRef.current) {
+        setDocxError("Preview container not ready");
+        setDocxLoading(false);
+        return;
+      }
+
+      // Clear any previous render
+      docxContainerRef.current.innerHTML = "";
+
+      try {
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch file: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (!docxContainerRef.current) return; // Guard: modal may have closed
+
+        await renderAsync(arrayBuffer, docxContainerRef.current, undefined, {
+          useBase64URL: true,
+          renderHeaders: true,
+          renderFooters: true,
+          renderFootnotes: true,
+          ignoreLastRenderedPageBreak: false,
+        });
+      } catch (err: any) {
+        console.error("[DOCX Preview] Error:", err);
+        setDocxError(err.message || "Failed to render document");
+      } finally {
+        setDocxLoading(false);
+      }
+    }, 150); // Wait for dialog open animation
+
+    return () => clearTimeout(timer);
+  }, [open, isDocx, fileUrl]);
+
+  // ── PDF callbacks ─────────────────────────────────────────────────
   const onDocumentLoadSuccess = useCallback(
     ({ numPages }: { numPages: number }) => {
       setNumPages(numPages);
       setPageNumber(1);
-      // Auto-fit on load
       if (containerRef.current) {
         const availableWidth = containerRef.current.clientWidth - 48;
-        const fitScale = availableWidth / 595; // A4 width in points
+        const fitScale = availableWidth / 595;
         setScale(Math.min(Math.max(fitScale, 0.8), 1.5));
       }
     },
@@ -78,8 +144,7 @@ export function CVPreviewModal({
   const fitToWidth = () => {
     if (containerRef.current) {
       const availableWidth = containerRef.current.clientWidth - 48;
-      const fitScale = availableWidth / 595;
-      setScale(Math.min(fitScale, 2));
+      setScale(Math.min(availableWidth / 595, 2));
     }
   };
 
@@ -87,7 +152,6 @@ export function CVPreviewModal({
   const goToNextPage = () =>
     setPageNumber((p) => Math.min(numPages || 1, p + 1));
 
-  // Calculate page dimensions (A4 = 595 x 842 points)
   const pageWidth = 595 * scale;
   const pageHeight = 842 * scale;
 
@@ -97,86 +161,99 @@ export function CVPreviewModal({
         className={cn(
           "w-full h-full max-w-none max-h-none p-0 gap-0 rounded-none border-0",
           "sm:w-[98vw] sm:h-[95vh] sm:max-w-[1200px] sm:rounded-lg sm:border",
+          "flex flex-col overflow-hidden",
         )}
       >
-        {/* Header */}
+        {/* ── Header ─────────────────────────────────────────────── */}
         <DialogHeader className="px-3 sm:px-4 py-2 sm:py-3 border-b shrink-0 flex flex-row items-center justify-between gap-2 bg-background">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <DialogTitle className="text-xs sm:text-sm font-medium truncate">
               {title}
             </DialogTitle>
-            {numPages && (
+            {!isDocx && numPages && (
               <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
                 {pageNumber}/{numPages}
               </span>
             )}
           </div>
 
-          {/* Controls - Responsive */}
           <div className="flex items-center gap-1">
-            {/* Zoom - Icon only on mobile */}
-            <div className="flex items-center border rounded bg-muted/30">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8"
-                onClick={zoomOut}
-              >
-                <ZoomOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
-              <span className="text-[10px] sm:text-xs font-medium w-8 sm:w-10 text-center hidden sm:inline">
-                {Math.round(scale * 100)}%
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8"
-                onClick={zoomIn}
-              >
-                <ZoomIn className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex"
-                onClick={fitToWidth}
-                title="Fit to width"
-              >
-                <RotateCcw className="h-3 w-3" />
-              </Button>
-            </div>
+            {/* PDF zoom + pagination controls */}
+            {!isDocx && (
+              <>
+                <div className="flex items-center border rounded bg-muted/30">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
+                    onClick={zoomOut}
+                  >
+                    <ZoomOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </Button>
+                  <span className="text-[10px] sm:text-xs font-medium w-8 sm:w-10 text-center hidden sm:inline">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
+                    onClick={zoomIn}
+                  >
+                    <ZoomIn className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex"
+                    onClick={fitToWidth}
+                    title="Fit to width"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                </div>
 
-            {/* Page nav */}
-            {numPages && numPages > 1 && (
-              <div className="flex items-center border rounded bg-muted/30 ml-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 sm:h-8 sm:w-8"
-                  onClick={goToPrevPage}
-                  disabled={pageNumber <= 1}
-                >
-                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-                <span className="text-[10px] sm:text-xs font-medium px-1 sm:px-2 min-w-[1.5rem] sm:min-w-[2rem] text-center">
-                  {pageNumber}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 sm:h-8 sm:w-8"
-                  onClick={goToNextPage}
-                  disabled={pageNumber >= numPages}
-                >
-                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-              </div>
+                {numPages && numPages > 1 && (
+                  <div className="flex items-center border rounded bg-muted/30 ml-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 sm:h-8 sm:w-8"
+                      onClick={goToPrevPage}
+                      disabled={pageNumber <= 1}
+                    >
+                      <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                    <span className="text-[10px] sm:text-xs font-medium px-1 sm:px-2 min-w-[1.5rem] sm:min-w-[2rem] text-center">
+                      {pageNumber}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 sm:h-8 sm:w-8"
+                      onClick={goToNextPage}
+                      disabled={pageNumber >= numPages}
+                    >
+                      <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 sm:h-8 sm:w-8 ml-1"
+              className="h-7 w-7 sm:h-8 sm:w-8"
+              onClick={() => window.open(fileUrl, "_blank")}
+              title="Download original"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 sm:h-8 sm:w-8"
               onClick={() => onOpenChange(false)}
             >
               <X className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -184,88 +261,148 @@ export function CVPreviewModal({
           </div>
         </DialogHeader>
 
-        {/* PDF Container - Horizontal scroll for large pages */}
+        {/* ── Content Area ───────────────────────────────────────── */}
         <div
           ref={containerRef}
           className="flex-1 overflow-auto bg-muted/20 relative"
         >
-          <div className="min-h-full flex justify-center p-3 sm:p-4 md:p-6">
-            <Document
-              file={fileUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              loading={
+          {/* ── DOCX Preview ───────────────────────────────────── */}
+          {isDocx && (
+            <div className="p-4 sm:p-6">
+              {/* Loading state */}
+              {docxLoading && (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    Loading document...
+                  </p>
+                </div>
+              )}
+
+              {/* Error state */}
+              {!docxLoading && docxError && (
+                <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                    <FileText className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">
+                      Unable to preview document
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                      {docxError}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(fileUrl, "_blank")}
+                    className="gap-2 mt-1"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download to view
+                  </Button>
+                </div>
+              )}
+
+              {/* The actual render target — always in DOM so ref is available */}
+              <div
+                ref={docxContainerRef}
+                className={cn(
+                  "bg-white shadow-lg rounded-lg max-w-4xl mx-auto overflow-auto min-h-[400px]",
+                  // Hide while loading or errored
+                  (docxLoading || docxError) && "hidden",
+                )}
+                style={{
+                  // docx-preview injects its own section padding;
+                  // don't add extra padding here or it doubles up
+                  padding: 0,
+                }}
+              ></div>
+            </div>
+          )}
+
+          {/* ── PDF Preview ────────────────────────────────────── */}
+          {!isDocx && (
+            <div className="min-h-full flex justify-center p-3 sm:p-4 md:p-6">
+              <Document
+                file={fileUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                loading={
+                  <div
+                    className="bg-white shadow-lg flex items-center justify-center"
+                    style={{
+                      width: Math.min(pageWidth, containerWidth),
+                      height: pageHeight,
+                    }}
+                  >
+                    <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary" />
+                  </div>
+                }
+                error={
+                  <div className="flex flex-col items-center justify-center h-64 w-64 bg-white shadow-lg text-muted-foreground p-4 text-center">
+                    <FileText className="h-8 w-8 mb-2" />
+                    <p className="font-medium text-sm">Failed to load PDF</p>
+                    <p className="text-xs mt-1">File may be corrupted</p>
+                  </div>
+                }
+              >
                 <div
-                  className="bg-white shadow-lg flex items-center justify-center"
+                  className="shadow-2xl bg-white"
                   style={{
-                    width: Math.min(pageWidth, containerWidth),
+                    width: pageWidth,
                     height: pageHeight,
+                    maxWidth: "none",
                   }}
                 >
-                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary" />
+                  <Page
+                    pageNumber={pageNumber}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    width={pageWidth}
+                    scale={1}
+                    className="w-full h-full"
+                  />
                 </div>
-              }
-              error={
-                <div className="flex flex-col items-center justify-center h-64 w-64 bg-white shadow-lg text-muted-foreground p-4 text-center">
-                  <p className="font-medium text-sm">Failed to load PDF</p>
-                  <p className="text-xs mt-1">File may be corrupted</p>
-                </div>
-              }
-            >
-              <div
-                className="shadow-2xl bg-white"
-                style={{
-                  width: pageWidth,
-                  height: pageHeight,
-                  maxWidth: "none", // Allow horizontal scroll
-                }}
-              >
-                <Page
-                  pageNumber={pageNumber}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  width={pageWidth}
-                  scale={1}
-                  className="w-full h-full"
-                />
-              </div>
-            </Document>
-          </div>
+              </Document>
+            </div>
+          )}
         </div>
 
-        {/* Mobile zoom indicator */}
-        <div className="sm:hidden shrink-0 px-3 py-2 border-t bg-background flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            Zoom: {Math.round(scale * 100)}%
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={zoomOut}
-            >
-              <ZoomOut className="h-3 w-3 mr-1" />
-              Out
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={zoomIn}
-            >
-              <ZoomIn className="h-3 w-3 mr-1" />
-              In
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={fitToWidth}
-            >
-              Fit
-            </Button>
+        {/* ── Mobile zoom bar (PDF only) ─────────────────────────── */}
+        {!isDocx && (
+          <div className="sm:hidden shrink-0 px-3 py-2 border-t bg-background flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Zoom: {Math.round(scale * 100)}%
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={zoomOut}
+              >
+                <ZoomOut className="h-3 w-3 mr-1" /> Out
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={zoomIn}
+              >
+                <ZoomIn className="h-3 w-3 mr-1" /> In
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={fitToWidth}
+              >
+                Fit
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

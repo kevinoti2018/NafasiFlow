@@ -11,6 +11,7 @@ import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
 import { extractTextFromFile } from "@/lib/cv/parser";
+import mammoth from "mammoth";
 
 export async function POST(
   req: NextRequest,
@@ -45,16 +46,34 @@ export async function POST(
     );
   }
 
-  // Download the file from Cloudinary
-  const fileBuffer = await downloadFile(cv.originalFileUrl);
+  // Download the file from Cloudinary (or local storage)
+  const fileBuffer = await downloadFile(cv.originalFileUrl, 60000, 3);
+  const tempDir = os.tmpdir();
   const tempPath = path.join(
-    os.tmpdir(),
-    `${Date.now()}-reanalyze-${cv.id}.pdf`,
+    tempDir,
+    `${Date.now()}-reanalyze-${cv.id}.${cv.originalFileUrl.split(".").pop() || "pdf"}`,
   );
   await writeFile(tempPath, fileBuffer);
 
   try {
-    const extractedText = await extractTextFromFile(tempPath);
+    // Try to extract text – if it fails with a PDF error, fallback to DOCX extraction
+    let extractedText: string;
+    try {
+      extractedText = await extractTextFromFile(tempPath);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (
+        errorMessage.includes("Invalid PDF structure") ||
+        errorMessage.includes("PDF")
+      ) {
+        console.log("PDF extraction failed, trying DOCX fallback...");
+        const result = await mammoth.extractRawText({ path: tempPath });
+        extractedText = result.value;
+      } else {
+        throw err;
+      }
+    }
+
     const [formatAnalysis, contentAnalysis] = await Promise.all([
       analyzeFormat(tempPath, extractedText),
       analyzeContent(extractedText),
@@ -70,6 +89,7 @@ export async function POST(
         atsContentScore: contentAnalysis.atsContentScore,
         impactScore: contentAnalysis.impactScore,
         keywordCoverage: contentAnalysis.keywordCoverage,
+        missingSections: contentAnalysis.missingSections,
         analysisVersion: { increment: 1 },
         lastAnalyzedAt: new Date(),
       },

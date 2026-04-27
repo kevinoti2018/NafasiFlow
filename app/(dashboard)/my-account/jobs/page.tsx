@@ -72,38 +72,44 @@ type JobWithCount = Job & {
   _count?: { cvJobAnalyses?: number };
 };
 
-// Enhanced status configuration for AI analysis
+// Status configuration using consistent primary color
 const statusConfig = {
   pending: {
     label: "Pending",
-    color: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    color:
+      "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-500",
     icon: Clock,
     description: "Awaiting analysis",
   },
   processing: {
     label: "Processing",
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4]",
     icon: RefreshCw,
     description: "AI analyzing...",
   },
   completed: {
     label: "Analyzed",
-    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    color:
+      "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4]",
     icon: CheckCircle2,
     description: "Ready for review",
   },
   failed: {
     label: "Failed",
-    color: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+    color:
+      "bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/15 dark:text-red-400",
     icon: XCircle,
     description: "Retry needed",
   },
 };
 
 const jobStatusColors = {
-  open: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  closed: "bg-amber-100 text-amber-800 border-amber-200",
-  archived: "bg-slate-100 text-slate-800 border-slate-200",
+  open: "bg-[#005f78]/10 text-[#005f78] border-[#005f78]/20 dark:bg-[#005f78]/20 dark:text-[#4db8d4] dark:border-[#005f78]/30",
+  closed:
+    "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
+  archived:
+    "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700",
 };
 
 export default function JobsPage() {
@@ -164,13 +170,13 @@ export default function JobsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#161b1d]">
       {/* Header */}
-      <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b border-slate-200/50 dark:border-slate-800/50">
+      <div className="sticky top-16 z-30 bg-white/95 dark:bg-[#161b1d]/95 border-b border-slate-200/50 dark:border-slate-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 gap-4">
             <div className="flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 shadow-lg">
+              <div className="p-2.5 rounded-xl bg-[#005f78] shadow-lg shadow-[#005f78]/25">
                 <Briefcase className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -184,8 +190,8 @@ export default function JobsPage() {
             </div>
             <div className="flex items-center gap-3">
               <Button
-                variant="outline"
-                className="gap-2"
+                variant="default"
+                className="gap-2 bg-[#005f78] hover:bg-[#004a5e] text-white"
                 onClick={() => setCreateModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -198,34 +204,36 @@ export default function JobsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* KPI Cards (unchanged) */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-bl-full" />
+          <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Total Positions
               </CardTitle>
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Briefcase className="h-4 w-4 text-blue-600" />
+              <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                <Briefcase className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 {totalJobs}
               </div>
-              <p className="text-xs text-slate-500 mt-1">Active job postings</p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                Active job postings
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
+          <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Analyzed
               </CardTitle>
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                <CheckCircle2 className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
               </div>
             </CardHeader>
             <CardContent>
@@ -235,9 +243,9 @@ export default function JobsPage() {
               <div className="flex items-center gap-2 mt-1">
                 <Progress
                   value={totalJobs > 0 ? (analyzedJobs / totalJobs) * 100 : 0}
-                  className="h-1.5 w-16"
+                  className="h-1.5 w-16 bg-slate-200 dark:bg-slate-700"
                 />
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-500">
                   {totalJobs > 0
                     ? Math.round((analyzedJobs / totalJobs) * 100)
                     : 0}
@@ -247,41 +255,41 @@ export default function JobsPage() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-bl-full" />
+          <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-[#005f78]/10 rounded-bl-full dark:bg-[#005f78]/10" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 CV Analyses
               </CardTitle>
-              <div className="p-2 rounded-lg bg-violet-500/10">
-                <BarChart3 className="h-4 w-4 text-violet-600" />
+              <div className="p-2 rounded-lg bg-[#005f78]/10 dark:bg-[#005f78]/15">
+                <BarChart3 className="h-4 w-4 text-[#005f78] dark:text-[#4db8d4]" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 {totalAnalyses}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                 Total comparisons run
               </p>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-0 shadow-sm bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-bl-full" />
+          <Card className="relative overflow-hidden border-0 shadow-sm bg-white dark:bg-[#1c2225]">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-bl-full dark:bg-amber-500/10" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Pending
               </CardTitle>
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Clock className="h-4 w-4 text-amber-600" />
+              <div className="p-2 rounded-lg bg-amber-500/10 dark:bg-amber-500/15">
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 {pendingJobs}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
                 Awaiting AI analysis
               </p>
             </CardContent>
@@ -289,12 +297,14 @@ export default function JobsPage() {
         </div>
 
         {/* Main Content */}
-        <Card className="border-0 shadow-sm overflow-hidden">
+        <Card className="border-0 shadow-sm overflow-hidden bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-800">
           <CardHeader className="border-b border-slate-100 dark:border-slate-800">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-lg">All Positions</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg text-slate-900 dark:text-slate-100">
+                  All Positions
+                </CardTitle>
+                <CardDescription className="text-slate-500 dark:text-slate-400">
                   {filteredJobs.length} position
                   {filteredJobs.length !== 1 ? "s" : ""} found
                 </CardDescription>
@@ -306,19 +316,25 @@ export default function JobsPage() {
                     placeholder="Search positions..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 h-10"
+                    className="pl-10 h-10 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                   />
                 </div>
                 <Tabs
                   value={viewMode}
                   onValueChange={(v) => setViewMode(v as "list" | "grid")}
                 >
-                  <TabsList className="h-10">
-                    <TabsTrigger value="list" className="gap-2">
+                  <TabsList className="h-10 bg-slate-100 dark:bg-[#161b1d]">
+                    <TabsTrigger
+                      value="list"
+                      className="gap-2 data-[state=active]:bg-white data-[state=active]:text-[#005f78] data-[state=active]:shadow-sm dark:data-[state=active]:bg-[#005f78] dark:data-[state=active]:text-white"
+                    >
                       <List className="h-4 w-4" />
                       <span className="hidden sm:inline">List</span>
                     </TabsTrigger>
-                    <TabsTrigger value="grid" className="gap-2">
+                    <TabsTrigger
+                      value="grid"
+                      className="gap-2 data-[state=active]:bg-white data-[state=active]:text-[#005f78] data-[state=active]:shadow-sm dark:data-[state=active]:bg-[#005f78] dark:data-[state=active]:text-white"
+                    >
                       <LayoutGrid className="h-4 w-4" />
                       <span className="hidden sm:inline">Grid</span>
                     </TabsTrigger>
@@ -327,13 +343,18 @@ export default function JobsPage() {
               </div>
             </div>
 
-            {/* Filters: Analysis Status + Job Status */}
+            {/* Filters */}
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <Button
                 variant={statusFilter === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter("all")}
-                className="h-8"
+                className={cn(
+                  "h-8",
+                  statusFilter === "all"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
               >
                 All
               </Button>
@@ -341,7 +362,12 @@ export default function JobsPage() {
                 variant={statusFilter === "completed" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter("completed")}
-                className="h-8"
+                className={cn(
+                  "h-8",
+                  statusFilter === "completed"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                 Analyzed
@@ -350,7 +376,12 @@ export default function JobsPage() {
                 variant={statusFilter === "pending" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter("pending")}
-                className="h-8"
+                className={cn(
+                  "h-8",
+                  statusFilter === "pending"
+                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-amber-600 hover:border-amber-500/50",
+                )}
               >
                 <Clock className="h-3.5 w-3.5 mr-1.5" />
                 Pending
@@ -359,28 +390,51 @@ export default function JobsPage() {
                 variant={statusFilter === "processing" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter("processing")}
-                className="h-8"
+                className={cn(
+                  "h-8",
+                  statusFilter === "processing"
+                    ? "bg-[#005f78] hover:bg-[#004a5e] text-white"
+                    : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#005f78] hover:border-[#005f78]/50 dark:hover:text-slate-200",
+                )}
               >
                 <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
                 Processing
               </Button>
 
-              {/* Separator */}
-              <div className="w-px h-6 bg-border mx-1" />
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
 
-              {/* Job Status Filter */}
               <Select
                 value={jobStatusFilter}
                 onValueChange={setJobStatusFilter}
               >
-                <SelectTrigger className="w-[130px] h-8">
+                <SelectTrigger className="w-[130px] h-8 bg-white dark:bg-[#161b1d] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                   <SelectValue placeholder="Job status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All jobs</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                <SelectContent className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700">
+                  <SelectItem
+                    value="all"
+                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                  >
+                    All jobs
+                  </SelectItem>
+                  <SelectItem
+                    value="open"
+                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                  >
+                    Open
+                  </SelectItem>
+                  <SelectItem
+                    value="closed"
+                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                  >
+                    Closed
+                  </SelectItem>
+                  <SelectItem
+                    value="archived"
+                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
+                  >
+                    Archived
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -390,24 +444,35 @@ export default function JobsPage() {
             {isLoading ? (
               <div className="p-6 space-y-4">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
+                  <Skeleton
+                    key={i}
+                    className="h-16 w-full bg-slate-200 dark:bg-slate-800"
+                  />
                 ))}
               </div>
             ) : viewMode === "list" ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[300px]">Position</TableHead>
-                      <TableHead>Analysis Status</TableHead>
-                      <TableHead>Job Status</TableHead>
-                      <TableHead className="hidden md:table-cell">
+                    <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800">
+                      <TableHead className="w-[300px] text-slate-500 dark:text-slate-400">
+                        Position
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Analysis Status
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Job Status
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell text-slate-500 dark:text-slate-400">
                         Analyses
                       </TableHead>
-                      <TableHead className="hidden sm:table-cell">
+                      <TableHead className="hidden sm:table-cell text-slate-500 dark:text-slate-400">
                         Created
                       </TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right text-slate-500 dark:text-slate-400">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -424,7 +489,7 @@ export default function JobsPage() {
                           onClick={() =>
                             router.push(`/my-account/jobs/${job.id}`)
                           }
-                          className="cursor-pointer group"
+                          className="cursor-pointer group border-slate-100 dark:border-slate-800 hover:bg-[#005f78]/5 dark:hover:bg-[#005f78]/5"
                         >
                           <TableCell>
                             <div className="flex items-start gap-3">
@@ -432,7 +497,7 @@ export default function JobsPage() {
                                 className={cn(
                                   "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
                                   job.analysisStatus === "completed"
-                                    ? "bg-emerald-500/10"
+                                    ? "bg-[#005f78]/10 dark:bg-[#005f78]/15"
                                     : "bg-slate-100 dark:bg-slate-800",
                                 )}
                               >
@@ -440,8 +505,8 @@ export default function JobsPage() {
                                   className={cn(
                                     "h-5 w-5",
                                     job.analysisStatus === "completed"
-                                      ? "text-emerald-600"
-                                      : "text-slate-500",
+                                      ? "text-[#005f78] dark:text-[#4db8d4]"
+                                      : "text-slate-400 dark:text-slate-500",
                                   )}
                                 />
                               </div>
@@ -449,7 +514,7 @@ export default function JobsPage() {
                                 <div className="font-medium text-slate-900 dark:text-slate-100">
                                   {job.title || "Untitled Position"}
                                 </div>
-                                <div className="text-sm text-slate-500">
+                                <div className="text-sm text-slate-500 dark:text-slate-500">
                                   {job.company || "No company specified"}
                                 </div>
                               </div>
@@ -471,17 +536,17 @@ export default function JobsPage() {
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                 {job._count?.cvJobAnalyses ?? 0}
                               </span>
                               {(job._count?.cvJobAnalyses ?? 0) > 0 && (
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs text-slate-400 dark:text-slate-500">
                                   analyses
                                 </span>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell text-slate-500">
+                          <TableCell className="hidden sm:table-cell text-slate-500 dark:text-slate-500">
                             {formatDistanceToNow(new Date(job.createdAt), {
                               addSuffix: true,
                             })}
@@ -494,7 +559,7 @@ export default function JobsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-[#005f78] hover:bg-[#005f78]/10 dark:hover:text-[#4db8d4] dark:hover:bg-[#005f78]/10"
                                 onClick={() => setEditingJob(job)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -504,30 +569,35 @@ export default function JobsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                   >
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="bg-white dark:bg-[#1c2225] border-slate-200 dark:border-slate-700"
+                                >
                                   <DropdownMenuItem
                                     onClick={() =>
                                       router.push(`/my-account/jobs/${job.id}`)
                                     }
+                                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
                                   >
                                     <ExternalLink className="mr-2 h-4 w-4" />
                                     View Details
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => setEditingJob(job)}
+                                    className="text-slate-700 dark:text-slate-300 focus:bg-[#005f78]/10 focus:text-[#005f78] dark:focus:bg-[#005f78]/20 dark:focus:text-[#4db8d4]"
                                   >
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
+                                  <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                                   <DropdownMenuItem
                                     onClick={() => setDeletingJob(job)}
-                                    className="text-red-600 focus:text-red-600"
+                                    className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-500/10"
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
@@ -542,7 +612,7 @@ export default function JobsPage() {
                     {filteredJobs.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="h-32 text-center">
-                          <div className="flex flex-col items-center justify-center text-slate-500">
+                          <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500">
                             <Search className="h-8 w-8 mb-2 opacity-50" />
                             <p>No positions found</p>
                             <p className="text-sm">
@@ -568,7 +638,7 @@ export default function JobsPage() {
                     return (
                       <Card
                         key={job.id}
-                        className="group cursor-pointer border-0 shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-800"
+                        className="group cursor-pointer border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all bg-white dark:bg-[#161b1d] hover:border-[#005f78]/30 dark:hover:border-[#005f78]/30"
                         onClick={() =>
                           router.push(`/my-account/jobs/${job.id}`)
                         }
@@ -579,7 +649,7 @@ export default function JobsPage() {
                               className={cn(
                                 "w-12 h-12 rounded-xl flex items-center justify-center",
                                 job.analysisStatus === "completed"
-                                  ? "bg-emerald-500/10"
+                                  ? "bg-[#005f78]/10 dark:bg-[#005f78]/15"
                                   : "bg-slate-100 dark:bg-slate-800",
                               )}
                             >
@@ -587,8 +657,8 @@ export default function JobsPage() {
                                 className={cn(
                                   "h-6 w-6",
                                   job.analysisStatus === "completed"
-                                    ? "text-emerald-600"
-                                    : "text-slate-500",
+                                    ? "text-[#005f78] dark:text-[#4db8d4]"
+                                    : "text-slate-400 dark:text-slate-500",
                                 )}
                               />
                             </div>
@@ -605,22 +675,22 @@ export default function JobsPage() {
                               </Badge>
                             </div>
                           </div>
-                          <CardTitle className="text-lg mt-3 line-clamp-1">
+                          <CardTitle className="text-lg mt-3 line-clamp-1 text-slate-900 dark:text-slate-100">
                             {job.title || "Untitled Position"}
                           </CardTitle>
-                          <CardDescription className="line-clamp-1">
+                          <CardDescription className="line-clamp-1 text-slate-500 dark:text-slate-500">
                             {job.company || "No company specified"}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-0">
                           <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2 text-slate-500">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-500">
                               <BarChart3 className="h-4 w-4" />
                               <span>
                                 {job._count?.cvJobAnalyses ?? 0} analyses
                               </span>
                             </div>
-                            <span className="text-slate-400">
+                            <span className="text-slate-400 dark:text-slate-600">
                               {formatDistanceToNow(new Date(job.createdAt), {
                                 addSuffix: true,
                               })}
@@ -631,7 +701,7 @@ export default function JobsPage() {
                           <Button
                             variant="secondary"
                             size="icon"
-                            className="h-8 w-8 shadow-lg"
+                            className="h-8 w-8 shadow-lg bg-[#005f78] hover:bg-[#004a5e] text-white border-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/my-account/jobs/${job.id}`);
@@ -645,7 +715,7 @@ export default function JobsPage() {
                   })}
                 </div>
                 {filteredJobs.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                  <div className="flex flex-col items-center justify-center py-12 text-slate-500 dark:text-slate-500">
                     <Search className="h-12 w-12 mb-4 opacity-50" />
                     <p className="text-lg font-medium">No positions found</p>
                     <p className="text-sm">

@@ -62,7 +62,7 @@ export async function GET(
             level: true,
           },
         },
-        application: { select: { id: true, status: true } },
+        // application: { select: { id: true, status: true } },
       },
     }),
     db.cVJobAnalysis.count({ where }),

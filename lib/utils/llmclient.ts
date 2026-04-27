@@ -1,4 +1,4 @@
-// llmClient.ts
+// lib/utils/llmclient.ts
 import { GoogleGenAI } from "@google/genai";
 import {
   prompts,
@@ -25,11 +25,11 @@ const CONFIG = {
     models: (process.env.OPENROUTER_MODELS || "openrouter/free").split(","),
   },
   circuitBreaker: {
-    failureThreshold: 5, // raised from 3 — more tolerance before opening circuit
-    recoveryMs: 30000, // lowered from 60s — recover faster after a blip
+    failureThreshold: 3,
+    recoveryMs: 60000,
   },
   totalBudgetMs: 45000,
-  maxJsonRetries: 3, // raised from 2 — extra retry before giving up on JSON
+  maxJsonRetries: 2,
 } as const;
 
 // ===============================
@@ -93,16 +93,20 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Strip markdown code fences that free models commonly add around JSON output.
- * e.g. ```json\n{...}\n``` → {...}
- */
-function extractJson(raw: string): any {
-  const stripped = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-  return JSON.parse(stripped);
+// ===============================
+// Helper to extract JSON from markdown code blocks
+// ===============================
+function extractJsonFromMarkdown(text: string): string {
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.slice(7);
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.slice(3);
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.slice(0, -3);
+  }
+  return cleaned.trim();
 }
 
 // ===============================
@@ -156,7 +160,7 @@ async function callOpenRouter(
     if (perModelTimeout < 500) break;
 
     try {
-      console.log(`[LLM] OpenRouter trying model: ${model}`);
+      console.log(`[LLM] OpenRouter trying ${model}`);
       const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -180,61 +184,53 @@ async function callOpenRouter(
       if (!response.ok) {
         const errorText = await response.text();
         console.error(
-          `[LLM] OpenRouter ${model} HTTP ${response.status}: ${errorText.slice(0, 200)}`,
+          `[LLM] ${model} HTTP ${response.status}: ${errorText.slice(0, 100)}`,
         );
-        if (
-          response.status === 404 ||
-          response.status === 429 ||
-          response.status >= 500
-        ) {
+        if (response.status === 404) {
           modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
-          console.warn(
-            `[LLM] OpenRouter model ${model} placed on cooldown for ${COOLDOWN_MS / 1000}s`,
-          );
+        } else if (response.status >= 500 || response.status === 429) {
+          modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
         }
-        lastError = `${model}: HTTP ${response.status}`;
         continue;
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error(`Empty content from ${model}`);
-      console.log(`[LLM] OpenRouter ${model}: success`);
+      if (!content) throw new Error("Empty content");
+      console.log(`[LLM] OpenRouter ${model} succeeded`);
       return content;
-    } catch (err: any) {
-      lastError = `${model}: ${err.message}`;
-      console.error(`[LLM] OpenRouter ${model} threw:`, err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      lastError = `${model}: ${message}`;
       modelCooldownUntil.set(model, Date.now() + COOLDOWN_MS);
     }
   }
-
-  throw new Error(`OpenRouter exhausted all models. Last error — ${lastError}`);
+  throw new Error(lastError);
 }
 
 // ===============================
-// JSON validation & retry
+// JSON validation & retry (with markdown stripping)
 // ===============================
 async function callWithJsonRetry(
   providerFn: (prompt: string, budget?: number) => Promise<string>,
   prompt: string,
   budgetRemaining: number,
   retriesLeft: number = CONFIG.maxJsonRetries,
-): Promise<any> {
+): Promise<unknown> {
   for (let attempt = 1; attempt <= retriesLeft + 1; attempt++) {
     try {
       const raw = await providerFn(prompt, budgetRemaining);
-      // extractJson strips markdown fences before parsing — critical for free models
-      const parsed = extractJson(raw);
+      const jsonString = extractJsonFromMarkdown(raw);
+      const parsed = JSON.parse(jsonString);
       return parsed;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (attempt > retriesLeft) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         throw new Error(
-          `JSON parse failed after ${retriesLeft + 1} attempt(s): ${err.message}`,
+          `JSON parse failed after ${retriesLeft + 1} attempts: ${errorMessage}`,
         );
       }
-      console.warn(
-        `[LLM] JSON parse failed (attempt ${attempt}/${retriesLeft + 1}), retrying in ${200 * attempt}ms...`,
-      );
+      console.warn(`[LLM] JSON parse failed (attempt ${attempt}), retrying...`);
       await sleep(200 * attempt);
     }
   }
@@ -247,34 +243,44 @@ async function callWithJsonRetry(
 type OptimizeInput = {
   cv?: CVInput;
   job?: JobInput;
-  structuredJD?: any;
+  structuredJD?: unknown;
   primaryChallenge?: string;
   targetPersona?: string;
-  customPrompt?: string; // required when promptType === 'custom'
-  rawText?: string; // for cvStructure prompt
+  customPrompt?: string;
+  rawText?: string; // for cvStructure
+  // LinkedIn optimization sections
+  headline?: string;
+  about?: string;
+  experience?: string;
+  skills?: string;
+  certifications?: string;
+  education?: string;
+  volunteering?: string;
+  section?: string;
+  content?: string;
 };
 
 // ===============================
-// Main public function
+// Main public function (supports custom prompts)
 // ===============================
-export async function optimizeWithLLM<T = any>(
+export async function optimizeWithLLM<T = unknown>(
   promptType: PromptType,
   inputData: OptimizeInput,
 ): Promise<T> {
   const startTime = Date.now();
-  console.log(`[LLM] Starting "${promptType}" optimization`);
+  console.log(`[LLM] Starting ${promptType} optimization`);
 
-  // ── Build prompt ──────────────────────────────────────────────────
   let prompt: string;
 
+  // Handle custom prompt type
   if (promptType === "custom") {
     if (!inputData.customPrompt) {
       throw new Error('customPrompt is required when promptType is "custom"');
     }
     prompt = inputData.customPrompt;
   } else {
-    let promptFn: (input: any) => string;
-
+    // Use predefined prompt functions
+    let promptFn: (input: unknown) => string;
     switch (promptType) {
       case "match":
         promptFn = prompts.match;
@@ -291,20 +297,47 @@ export async function optimizeWithLLM<T = any>(
       case "cvStructure":
         promptFn = prompts.cvStructure;
         break;
+      case "linkedinOptimizeStructured":
+        promptFn = prompts.linkedinOptimizeStructured;
+        break;
+      case "linkedinOptimizeSection":
+        promptFn = prompts.linkedinOptimizeSection;
+        break;
       default:
         throw new Error(`Unknown prompt type: ${promptType}`);
     }
 
+    // Validate required fields based on prompt type
     if (promptType === "cvStructure") {
       if (!inputData.rawText) {
         throw new Error(`rawText is required for prompt type: ${promptType}`);
       }
       prompt = promptFn({ rawText: inputData.rawText });
+    } else if (promptType === "linkedinOptimizeStructured") {
+      prompt = promptFn({
+        headline: inputData.headline || "",
+        about: inputData.about || "",
+        experience: inputData.experience || "",
+        skills: inputData.skills || "",
+        certifications: inputData.certifications || "",
+        education: inputData.education || "",
+        volunteering: inputData.volunteering || "",
+      });
     } else if (promptType === "jd") {
       if (!inputData.job) {
         throw new Error(`job is required for prompt type: ${promptType}`);
       }
       prompt = promptFn(inputData);
+    } else if (promptType === "linkedinOptimizeSection") {
+      if (!inputData.section || !inputData.content) {
+        throw new Error(
+          `section and content are required for prompt type: ${promptType}`,
+        );
+      }
+      prompt = promptFn({
+        section: inputData.section,
+        content: inputData.content,
+      });
     } else {
       // match, sell, optimize require both cv and job
       if (!inputData.cv || !inputData.job) {
@@ -316,45 +349,31 @@ export async function optimizeWithLLM<T = any>(
     }
   }
 
-  // ── OpenRouter (primary) ──────────────────────────────────────────
-  if (!isCircuitClosed("openrouter")) {
-    console.warn(
-      `[LLM] OpenRouter circuit is OPEN (failures: ${providerFailures.get("openrouter") ?? 0}) — skipping straight to Gemini fallback`,
-    );
-  } else {
+  // Try OpenRouter first if its circuit is closed
+  if (isCircuitClosed("openrouter")) {
     try {
       const remainingBudget = CONFIG.totalBudgetMs - (Date.now() - startTime);
       const result = await callWithJsonRetry(
-        (p, budget) => callOpenRouter(p, budget ?? remainingBudget),
+        (p, budget) => callOpenRouter(p, budget || remainingBudget),
         prompt,
         remainingBudget,
       );
       resetCircuit("openrouter");
       console.log(
-        `[LLM] "${promptType}" completed via OpenRouter in ${Date.now() - startTime}ms`,
+        `[LLM] ${promptType} completed via OpenRouter in ${Date.now() - startTime}ms`,
       );
       return result as T;
     } catch (err) {
       recordFailure("openrouter");
-      console.error(
-        `[LLM] OpenRouter failed — total failures now: ${providerFailures.get("openrouter") ?? 0}. ` +
-          `Falling back to Gemini. Reason:`,
-        err,
-      );
+      console.error("[LLM] OpenRouter failed, falling back to Gemini", err);
     }
   }
 
-  // ── Gemini (last resort only) ─────────────────────────────────────
+  // Fallback to Gemini
   const elapsed = Date.now() - startTime;
   if (elapsed > CONFIG.totalBudgetMs - CONFIG.gemini.timeoutMs) {
-    throw new Error(
-      `Total budget exhausted (${elapsed}ms elapsed) before Gemini fallback could run`,
-    );
+    throw new Error("Total budget exhausted before Gemini fallback");
   }
-
-  console.warn(
-    `[LLM] Falling back to Gemini for "${promptType}" — check OpenRouter logs above to diagnose`,
-  );
 
   try {
     const result = await callWithJsonRetry(
@@ -363,12 +382,12 @@ export async function optimizeWithLLM<T = any>(
       CONFIG.totalBudgetMs - elapsed,
     );
     console.log(
-      `[LLM] "${promptType}" completed via Gemini (fallback) in ${Date.now() - startTime}ms`,
+      `[LLM] ${promptType} completed via Gemini in ${Date.now() - startTime}ms`,
     );
     return result as T;
   } catch (err) {
     throw new Error(
-      `Both providers failed for "${promptType}": ${err instanceof Error ? err.message : String(err)}`,
+      `Both providers failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }

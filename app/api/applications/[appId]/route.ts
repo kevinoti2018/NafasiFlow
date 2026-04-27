@@ -39,7 +39,7 @@ export async function GET(
       job: true,
       cvVersion: true,
       template: true,
-      cvJobAnalysis: true,
+      // cvJobAnalysis: true,
       statusHistory: { orderBy: { changedAt: "asc" } },
     },
   });

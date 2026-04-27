@@ -14,7 +14,15 @@ import {
 import { optimizeWithLLM } from "@/lib/utils/llmclient";
 import { Prisma } from "@prisma/client";
 import { CVInput } from "@/lib/ai/prompts";
-
+interface MatchResult {
+  matchScore: number;
+  rankSignal: string; // e.g., "high", "medium", "low"
+  verdict: "proceed" | "consider" | "high_risk";
+  // add any other fields your LLM returns
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendations?: string[];
+}
 export async function GET(req: NextRequest) {
   const session = await getCurrentUser();
   if (!session?.id) {
@@ -55,9 +63,6 @@ export async function GET(req: NextRequest) {
           },
         },
         template: { select: { id: true, name: true } },
-        cvJobAnalysis: {
-          select: { matchScore: true, rankSignal: true, verdict: true },
-        },
         statusHistory: { orderBy: { changedAt: "desc" }, take: 1 },
       },
     }),
@@ -115,21 +120,23 @@ export async function POST(req: NextRequest) {
     where: { cvVersionId_jobId: { cvVersionId, jobId } },
   });
   if (!analysis) {
-    const matchResult = await optimizeWithLLM("match", {
+    // Cast the result to MatchResult
+    const matchResult = (await optimizeWithLLM("match", {
       cv: cvVersion.profile as CVInput,
       job: {
         title: job.title || "",
         company: job.company || "",
         description: job.rawContent,
       },
-    });
+    })) as MatchResult;
+
     analysis = await db.cVJobAnalysis.create({
       data: {
         userId: session.id,
         cvVersionId,
         jobId,
         matchScore: matchResult.matchScore,
-        analysis: matchResult,
+        analysis: { ...matchResult },
         rankSignal: matchResult.rankSignal,
         verdict: matchResult.verdict,
         analysisVersion: cvVersion.analysisVersion,
@@ -146,6 +153,7 @@ export async function POST(req: NextRequest) {
       matchScore: analysis.matchScore,
       aiInsightsSnapshot: analysis.analysis as Prisma.InputJsonValue,
       analysisVersion: cvVersion.analysisVersion,
+      analysisId: analysis.id,
       status: "saved",
     },
   });

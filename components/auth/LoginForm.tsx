@@ -21,7 +21,6 @@ export const LoginForm = () => {
     password: "",
   });
 
-  // Handle OAuth and System Errors from URL
   useEffect(() => {
     if (urlError) {
       let message = "An error occurred during authentication.";
@@ -67,35 +66,35 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       {/* Primary OAuth Method */}
       <button
         type="button"
         disabled={isLoading}
         onClick={() => signIn("google", { callbackUrl })}
-        className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-base font-bold transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161b1d] text-sm font-semibold transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50"
       >
-        <FcGoogle className="text-2xl" />
+        <FcGoogle className="text-xl" />
         Access with Google
       </button>
 
       <div className="relative flex items-center justify-center">
         <div className="w-full border-t border-slate-100 dark:border-slate-800" />
-        <span className="absolute bg-white dark:bg-slate-950 px-4 text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase italic">
+        <span className="absolute bg-white dark:bg-[#1c2225] px-4 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase">
           Credential Access
         </span>
       </div>
 
       {/* Manual Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <label className="ml-1 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Email Address
           </label>
           <input
             type="email"
             disabled={isLoading}
-            className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
             placeholder="you@engine.com"
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
@@ -103,14 +102,14 @@ export const LoginForm = () => {
           />
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center px-1">
-            <label className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Password
             </label>
             <Link
               href="/forgot-password"
-              className="text-[10px] font-bold text-emerald-600 uppercase hover:text-emerald-500 transition-colors"
+              className="text-[11px] font-semibold text-[#005f78] hover:text-[#004a5e] dark:text-[#4db8d4] transition-colors"
             >
               Recovery
             </Link>
@@ -118,7 +117,7 @@ export const LoginForm = () => {
           <input
             type="password"
             disabled={isLoading}
-            className="h-14 w-full rounded-2xl border-0 bg-slate-100/50 dark:bg-slate-900 px-5 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-12 w-full rounded-xl border-0 bg-slate-100 dark:bg-[#161b1d] px-4 text-sm ring-1 ring-slate-200 dark:ring-slate-800 transition-all outline-none focus:ring-2 focus:ring-[#005f78]"
             placeholder="••••••••"
             onChange={(e) =>
               setFormData({ ...formData, password: e.target.value })
@@ -129,10 +128,10 @@ export const LoginForm = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="flex h-14 w-full items-center justify-center rounded-2xl bg-emerald-600 text-sm font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center rounded-xl bg-[#005f78] text-sm font-semibold text-white shadow-lg shadow-[#005f78]/20 transition-all hover:bg-[#004a5e] active:scale-[0.98] disabled:opacity-50"
         >
           {isLoading ? (
-            <ImSpinner2 className="animate-spin text-xl" />
+            <ImSpinner2 className="animate-spin text-lg" />
           ) : (
             "Resume Evolution"
           )}
@@ -140,12 +139,12 @@ export const LoginForm = () => {
       </form>
 
       {/* Redirect Link */}
-      <div className="mt-8 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
-        <p className="text-xs font-bold tracking-tight text-slate-400 uppercase">
+      <div className="mt-6 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           New to the system?{" "}
           <Link
             href="/register"
-            className="text-emerald-600 hover:text-emerald-500 transition-all underline underline-offset-4 decoration-emerald-500/20"
+            className="font-semibold text-[#005f78] hover:text-[#004a5e] dark:text-[#4db8d4] transition-colors"
           >
             Initialize Account
           </Link>
