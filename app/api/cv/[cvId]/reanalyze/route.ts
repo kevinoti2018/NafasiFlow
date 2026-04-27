@@ -60,11 +60,11 @@ export async function POST(
     let extractedText: string;
     try {
       extractedText = await extractTextFromFile(tempPath);
-    } catch (err: any) {
-      const errorMsg = err.message || "";
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       if (
-        errorMsg.includes("Invalid PDF structure") ||
-        errorMsg.includes("PDF")
+        errorMessage.includes("Invalid PDF structure") ||
+        errorMessage.includes("PDF")
       ) {
         console.log("PDF extraction failed, trying DOCX fallback...");
         const result = await mammoth.extractRawText({ path: tempPath });
